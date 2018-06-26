@@ -1,0 +1,12 @@
+engines:
+  eslint:
+    enabled: true
+    channel: 'eslint-2'
+    checks:
+      import/no-unresolved:
+        enabled: false
+      new-cap:
+        enabled: false
+ratings:
+  paths:
+  - '*.js'

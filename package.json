@@ -1,0 +1,43 @@
+{
+  "name": "@rodrigogs/xvideos",
+  "description": "xvideos.com api implementation.",
+  "version": "0.1.0-ALPHA",
+  "main": "index.js",
+  "license": "BSD-3-Clause",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rodrigogs/xvideos.git"
+  },
+  "keywords": [
+    "crawler",
+    "porn",
+    "spider",
+    "scrapper",
+    "api",
+    "xvideos"
+  ],
+  "scripts": {
+    "eslint": "eslint . --ext .js",
+    "test": "cross-env NODE_ENV=test mocha --exit lib/**/*.spec.js",
+    "coverage": "nyc --reporter=html --reporter=lcov npm test"
+  },
+  "dependencies": {
+    "axios": "^0.18.0",
+    "cheerio": "^1.0.0-rc.2"
+  },
+  "peerDependencies": {
+    "debug": "3.x"
+  },
+  "devDependencies": {
+    "chai": "^4.1.2",
+    "codeclimate-test-reporter": "^0.5.0",
+    "cross-env": "^5.2.0",
+    "eslint": "^4.19.1",
+    "eslint-config-airbnb-base": "^13.0.0",
+    "eslint-plugin-import": "^2.12.0",
+    "mocha": "^5.2.0"
+  },
+  "engines": {
+    "node": ">=7.6.0"
+  }
+}

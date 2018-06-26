@@ -1,0 +1,6 @@
+/package-lock.json
+/.idea/
+/node_modules/
+*.iml
+/.env
+coverage

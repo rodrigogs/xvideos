@@ -1,0 +1,14 @@
+language: node_js
+node_js:
+  - 8.10.0
+before_install:
+  - curl -o- -L https://yarnpkg.com/install.sh | bash
+  - export PATH="$HOME/.yarn/bin:$PATH"
+cache: yarn
+install:
+  - yarn install
+  - npm install -g codeclimate-test-reporter
+script:
+  - yarn eslint
+  - yarn run coverage
+  - codeclimate-test-reporter < coverage/lcov.info
