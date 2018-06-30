@@ -1,7 +1,7 @@
 {
   "name": "@rodrigogs/xvideos",
   "description": "xvideos.com api implementation.",
-  "version": "0.1.1-ALPHA",
+  "version": "1.0.0",
   "main": "index.js",
   "license": "BSD-3-Clause",
   "repository": {
@@ -14,7 +14,9 @@
     "spider",
     "scrapper",
     "api",
-    "xvideos"
+    "xvideos",
+    "api",
+    "library"
   ],
   "scripts": {
     "eslint": "eslint . --ext .js",
