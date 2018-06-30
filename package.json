@@ -28,9 +28,6 @@
     "cheerio": "^1.0.0-rc.2",
     "puppeteer": "^1.5.0"
   },
-  "peerDependencies": {
-    "debug": "3.x"
-  },
   "devDependencies": {
     "chai": "^4.1.2",
     "codeclimate-test-reporter": "^0.5.0",
