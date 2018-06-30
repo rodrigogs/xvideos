@@ -35,7 +35,7 @@ console.log(previousPage.pagination.current); // 1
 console.log(previousPage.hasNext()); // true
 console.log(previousPage.hasPrevious()); // tfalse
 
-const detail = await xvideos.videos.detail(fresh[0]); /**
+const detail = await xvideos.videos.details(fresh[0]); /**
 {
   title,
   duration,
@@ -139,9 +139,7 @@ const detail = await xvideos.videos.detail(fresh[0]); /**
     ```
 * Retrieve [video details](https://www.xvideos.com/video36638661/chaturbate_lulacum69_30-05-2018)
   ```javascript
-  const details = await xvideos.videos.details({ url: 'https://www.xvideos.com/video36638661/chaturbate_lulacum69_30-05-2018' }); /**
-    
-  **/
+  const details = await xvideos.videos.details({ url: 'https://www.xvideos.com/video36638661/chaturbate_lulacum69_30-05-2018' });
   ```
 
 ### License
