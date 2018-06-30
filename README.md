@@ -4,7 +4,7 @@
 [![Code Climate](https://codeclimate.com/github/rodrigogs/xvideos/badges/gpa.svg)](https://codeclimate.com/github/rodrigogs/xvideos)
 [![Test Coverage](https://codeclimate.com/github/rodrigogs/xvideos/badges/coverage.svg)](https://codeclimate.com/github/rodrigogs/xvideos/coverage)
 
-**xvideos** is a node.js [xvideos.com](xvideos.com) api implementation.
+A a [Node.js](https://nodejs.org) [xvideos.com](xvideos.com) API library.
 
 ### Install
 ```bash
