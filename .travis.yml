@@ -1,6 +1,12 @@
 language: node_js
+dist: trusty
+sudo: false
+addons:
+  chrome: stable
 node_js:
   - 8.10.0
+before_install:
+  - google-chrome-stable --headless --disable-gpu --remote-debugging-port=9222 http://localhost &
 install:
   - npm install
   - npm install -g codeclimate-test-reporter
