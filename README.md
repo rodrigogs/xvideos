@@ -69,6 +69,10 @@ const detail = await xvideos.videos.details(fresh[0]); /**
     ```javascript
     console.log(deshboardList.hasPrevious()); // true or false
     ```
+  * Refresh page videos
+    ```javascript
+    const refreshedVideos = await deshboardList.refresh();
+    ```
   * Retrieve next deshboard page videos 
     ```javascript
     const nextVideos = await deshboardList.next();
@@ -88,6 +92,10 @@ const detail = await xvideos.videos.details(fresh[0]); /**
   * Is there a previous page? 
     ```javascript
     console.log(freshList.hasPrevious()); // true or false
+    ```
+  * Refresh page videos 
+    ```javascript
+    const refreshedVideos = await freshList.refresh();
     ```
   * Retrieve next fresh page videos 
     ```javascript
@@ -109,6 +117,10 @@ const detail = await xvideos.videos.details(fresh[0]); /**
     ```javascript
     console.log(bestList.hasPrevious()); // true or false
     ```
+  * Refresh page videos 
+    ```javascript
+    const refreshedVideos = await bestList.refresh();
+    ```
   * Retrieve next best page videos 
     ```javascript
     const nextVideos = await bestList.next();
@@ -128,6 +140,10 @@ const detail = await xvideos.videos.details(fresh[0]); /**
   * Is there a previous page? 
     ```javascript
     console.log(verifiedList.hasPrevious()); // true or false
+    ```
+  * Refresh page videos 
+    ```javascript
+    const refreshedVideos = await verifiedList.refresh();
     ```
   * Retrieve next verified page videos 
     ```javascript
