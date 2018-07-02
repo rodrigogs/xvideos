@@ -59,7 +59,7 @@ const detail = await xvideos.videos.details(fresh[0]); /**
 ### API
 * Retrieve [dashboard videos](https://www.xvideos.com)
   ```javascript
-  const deshboardList = await xvideos.videos.dashboard({ page: 1 });
+  const dashboardList = await xvideos.videos.dashboard({ page: 1 });
   ```
   * Is there a next page? 
     ```javascript
