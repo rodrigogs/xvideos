@@ -35,7 +35,7 @@ console.log(previousPage.pagination.current); // 1
 console.log(previousPage.hasNext()); // true
 console.log(previousPage.hasPrevious()); // tfalse
 
-const detail = await xvideos.videos.details(fresh[0]); /**
+const detail = await xvideos.videos.details(fresh.videos[0]); /**
 {
   title,
   duration,
