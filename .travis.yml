@@ -3,7 +3,7 @@ sudo: required
 addons:
  chrome: stable
 node_js:
-  - 12.x
+  - 12
 install:
   - npm install
   - npm install -g codeclimate-test-reporter
