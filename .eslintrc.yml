@@ -16,11 +16,11 @@ rules:
   no-console: off
   no-restricted-globals: off
 globals:
-  process: on
-  describe: on
-  before: on
-  after: on
-  beforeEach: on
-  suite: on
-  test: on
-  it: on
+  process: readonly
+  describe: readonly
+  before: readonly
+  after: readonly
+  beforeEach: readonly
+  suite: readonly
+  test: readonly
+  it: readonly
