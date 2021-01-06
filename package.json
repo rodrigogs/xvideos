@@ -24,7 +24,7 @@
     "coverage": "nyc --reporter=html --reporter=lcov npm test"
   },
   "dependencies": {
-    "axios": "^0.20.0",
+    "axios": "^0.21.1",
     "cheerio": "^1.0.0-rc.3",
     "puppeteer": "^5.2.1"
   },
