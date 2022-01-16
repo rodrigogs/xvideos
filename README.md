@@ -160,8 +160,8 @@ const detail = await xvideos.videos.details(fresh.videos[0]); /**
 
 * Filter [videos](https://www.xvideos.com/?k=threesome)
   ```javascript
-  const videos = await xvideos.videos.details({ k: 'threesome' });
-  const videos = await xvideos.videos.details({ k: 'public', page: 5 });
+  const videos = await xvideos.videos.search({ k: 'threesome' });
+  const videos = await xvideos.videos.search({ k: 'public', page: 5 });
   ```
   * Is there a next page? 
     ```javascript
