@@ -158,5 +158,31 @@ const detail = await xvideos.videos.details(fresh.videos[0]); /**
   const details = await xvideos.videos.details({ url: 'https://www.xvideos.com/video36638661/chaturbate_lulacum69_30-05-2018' });
   ```
 
+* Filter [videos](https://www.xvideos.com/?k=threesome)
+  ```javascript
+  const videos = await xvideos.videos.details({ k: 'threesome' });
+  const videos = await xvideos.videos.details({ k: 'public', page: 5 });
+  ```
+  * Is there a next page? 
+    ```javascript
+    console.log(videos.hasNext()); // true or false
+    ```
+  * Is there a previous page? 
+    ```javascript
+    console.log(videos.hasPrevious()); // true or false
+    ```
+  * Refresh page videos 
+    ```javascript
+    const refreshedVideos = await videos.refresh();
+    ```
+  * Retrieve next verified page videos 
+    ```javascript
+    const nextVideos = await videos.next();
+    ```
+  * Retrieve previous verified page videos
+    ```javascript
+    const previousVideos = await videos.previous();
+    ```
+
 ### License
 [Licence](https://github.com/rodrigogs/xvideos/blob/master/LICENSE) © Rodrigo Gomes da Silva
