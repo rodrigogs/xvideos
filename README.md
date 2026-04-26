@@ -27,7 +27,7 @@ const xvideos = require('@rodrigogs/xvideos');
   // Retrieve fresh videos from the first page
   const fresh = await xvideos.videos.fresh({ page: 1 });
   // Log details of the retrieved videos
-  console.log(fresh.videos); // Array of video objects with properties like url, path, title, duration, profile, views
+  console.log(fresh.videos); // Array of video objects with properties like url, videoId, title, duration, profile, watchCount
   console.log(fresh.pagination.page); // Current page number
   console.log(fresh.pagination.pages); // Array of available page numbers
   console.log(fresh.hasNext()); // Check if there is a next page
@@ -50,7 +50,7 @@ const xvideos = require('@rodrigogs/xvideos');
   // Retrieve detailed information about a specific video
   const detail = await xvideos.videos.details(fresh.videos[0]);
   // Log details of the specific video
-  console.log(detail); // Detailed video object with properties like title, duration, image, videoType, views, files
+  console.log(detail); // Detailed video object with properties like title, videoId, duration, durationSeconds, thumbnailUrls, watchCount, videoType, files, uploadDate, tags, categories
 })();
 ```
 
@@ -65,6 +65,35 @@ npm run test:integration
 npm run coverage
 npm test
 ```
+
+## Migration Notes
+
+### Version 3.0 field normalization
+
+Some fields were normalized to remove redundant data while keeping all information available:
+
+| Previous field | New field | Notes |
+|---|---|---|
+| `videos[].path` | `videos[].videoId` | Use `video.url` if you need full link, or rebuild path with `/${video.videoId}` when required. |
+| `videos[].views` | `videos[].watchCount` | Numeric form for sorting/filtering. |
+| `details.image` | `details.thumbnailUrls[0]` | Primary thumbnail remains available as first item. |
+| `details.views` | `details.watchCount` | Numeric form for analytics and ranking. |
+
+### New fields added
+
+- `details.videoId`
+- `details.durationSeconds`
+- `details.thumbnailUrls`
+- `details.watchCount`
+- `details.voteCount`
+- `details.ratingPercent`
+- `details.uploadDate`
+- `details.description`
+- `details.contentUrl`
+- `details.tags`
+- `details.categories`
+
+These changes keep feature parity and add richer metadata from structured page data.
 
 ## API
 
@@ -163,7 +192,7 @@ const previousVideos = await verifiedList.previous();
 const details = await xvideos.videos.details({ url: 'https://www.xvideos.com/video36638661/chaturbate_lulacum69_30-05-2018' });
 
 // Log detailed information about the video
-console.log(details); // Detailed video object with properties like title, duration, image, videoType, views, files
+console.log(details); // Detailed video object with properties like title, videoId, duration, durationSeconds, thumbnailUrls, watchCount, videoType, files, uploadDate, description, contentUrl, tags, categories, voteCount, ratingPercent
 ```
 
 ### Filter [Videos](https://www.xvideos.com/?k=threesome)

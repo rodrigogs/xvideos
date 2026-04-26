@@ -5,11 +5,11 @@ export type VideoProfile = {
 
 export type VideoSummary = {
   url: string;
-  path: string;
+  videoId: string;
   title: string;
   duration: string;
   profile: VideoProfile;
-  views: string;
+  watchCount: number;
 };
 
 export type Pagination = {
@@ -44,12 +44,21 @@ export type VideoFiles = {
 export type VideoDetailsResult = {
   title: string;
   url: string;
+  videoId: string;
   duration: string;
-  image: string;
-  views: string;
+  durationSeconds: number;
+  thumbnailUrls: string[];
+  watchCount: number;
+  voteCount: number;
+  ratingPercent: number;
   videoType: string;
   videoWidth: string;
   videoHeight: string;
+  uploadDate: string;
+  description: string;
+  contentUrl: string;
+  tags: string[];
+  categories: string[];
   files: VideoFiles;
 };
 

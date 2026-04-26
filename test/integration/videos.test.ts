@@ -4,19 +4,19 @@ import xvideos from '../../src/index.js';
 
 const assertVideo = (video: {
   duration: string;
-  path: string;
+  videoId: string;
   profile: { name: string; url: string };
   title: string;
   url: string;
-  views: string;
+  watchCount: number;
 }) => {
   expect(typeof video.duration).toBe('string');
-  expect(video.path.startsWith('/video')).toBe(true);
+  expect(video.videoId.startsWith('video')).toBe(true);
   expect(typeof video.profile.name).toBe('string');
   expect(typeof video.profile.url).toBe('string');
   expect(video.title.length).toBeGreaterThan(0);
   expect(video.url.startsWith('https://')).toBe(true);
-  expect(typeof video.views).toBe('string');
+  expect(typeof video.watchCount).toBe('number');
 };
 
 const assertList = (
@@ -29,11 +29,11 @@ const assertList = (
     refresh: () => Promise<unknown>;
     videos: Array<{
       duration: string;
-      path: string;
+      videoId: string;
       profile: { name: string; url: string };
       title: string;
       url: string;
-      views: string;
+      watchCount: number;
     }>;
   },
   page: number,
@@ -95,10 +95,23 @@ describe.sequential('live integration', () => {
 
     expect(detail.title.length).toBeGreaterThan(0);
     expect(detail.url.startsWith('https://')).toBe(true);
+    expect(typeof detail.videoId).toBe('string');
+    expect(detail.videoId.startsWith('video')).toBe(true);
     expect(typeof detail.duration).toBe('string');
-    expect(detail.image.startsWith('https://')).toBe(true);
-    expect(typeof detail.views).toBe('string');
-    expect(detail.views.length).toBeGreaterThan(0);
+    expect(typeof detail.durationSeconds).toBe('number');
+    expect(detail.durationSeconds).toBeGreaterThan(0);
+    expect(Array.isArray(detail.thumbnailUrls)).toBe(true);
+    expect(detail.thumbnailUrls.length).toBeGreaterThan(0);
+    expect(detail.thumbnailUrls[0].startsWith('https://')).toBe(true);
+    expect(typeof detail.watchCount).toBe('number');
+    expect(detail.watchCount).toBeGreaterThan(0);
+    expect(typeof detail.voteCount).toBe('number');
+    expect(typeof detail.ratingPercent).toBe('number');
+    expect(typeof detail.uploadDate).toBe('string');
+    expect(typeof detail.description).toBe('string');
+    expect(typeof detail.contentUrl).toBe('string');
+    expect(Array.isArray(detail.tags)).toBe(true);
+    expect(Array.isArray(detail.categories)).toBe(true);
     expect(typeof detail.videoType).toBe('string');
     expect(typeof detail.videoWidth).toBe('string');
     expect(detail.videoWidth.length).toBeGreaterThan(0);

@@ -120,7 +120,7 @@ const parseVideo = ($: CheerioAPI, element: Element): VideoSummary | null => {
 
   return {
     url: base.resolveUrl(path),
-    path,
+    videoId: parseVideoId(path),
     title:
       normalizeText(titleLink.attr('title')) || normalizeText(titleNode.text()),
     duration: normalizeText(
@@ -135,7 +135,7 @@ const parseVideo = ($: CheerioAPI, element: Element): VideoSummary | null => {
       name: profileName,
       url: base.resolveUrl(profileLink.attr('href')),
     },
-    views: parseViews($video),
+    watchCount: parseNumberWithSuffix(parseViews($video)),
   };
 };
 
@@ -333,6 +333,223 @@ const readMeta = ($: CheerioAPI, property: string): string => {
   return normalizeText($(`meta[property="${property}"]`).attr('content'));
 };
 
+const parseNumberWithSuffix = (value: string): number => {
+  const match = normalizeText(value)
+    .replace(/,/g, '')
+    .match(/([0-9]+(?:\.[0-9]+)?)\s*([KMB])?/i);
+
+  if (!match) {
+    return 0;
+  }
+
+  const base = Number.parseFloat(match[1]);
+
+  const suffix = match[2]?.toUpperCase();
+  const multiplier =
+    suffix === 'K'
+      ? 1_000
+      : suffix === 'M'
+        ? 1_000_000
+        : suffix === 'B'
+          ? 1_000_000_000
+          : 1;
+
+  return Math.round(base * multiplier);
+};
+
+const parseDurationSeconds = (value: string): number => {
+  const normalized = normalizeText(value);
+
+  if (!normalized) {
+    return 0;
+  }
+
+  if (/^\d+$/.test(normalized)) {
+    return Number.parseInt(normalized, 10);
+  }
+
+  const isoMatch = normalized.match(/^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/i);
+
+  if (isoMatch) {
+    const hours = Number.parseInt(isoMatch[1] || '0', 10);
+    const minutes = Number.parseInt(isoMatch[2] || '0', 10);
+    const seconds = Number.parseInt(isoMatch[3] || '0', 10);
+
+    return hours * 3600 + minutes * 60 + seconds;
+  }
+
+  const units = Array.from(
+    normalized.matchAll(
+      /(\d+)\s*(h(?:ours?)?|m(?:in(?:ute)?s?)?|s(?:ec(?:ond)?s?)?)/gi,
+    ),
+  );
+
+  if (units.length === 0) {
+    return 0;
+  }
+
+  return units.reduce((total, match) => {
+    const amount = Number.parseInt(match[1], 10);
+    const unit = match[2].toLowerCase();
+
+    if (unit.startsWith('h')) {
+      return total + amount * 3600;
+    }
+
+    if (unit.startsWith('m')) {
+      return total + amount * 60;
+    }
+
+    return total + amount;
+  }, 0);
+};
+
+const parseVideoId = (value: string): string => {
+  const path = (() => {
+    try {
+      return new URL(value).pathname;
+    } catch {
+      return value;
+    }
+  })();
+
+  const segment = path
+    .split('/')
+    .filter(Boolean)
+    .find((item) => item.startsWith('video'));
+
+  return segment || '';
+};
+
+const parseStringArray = (value: unknown): string[] => {
+  const values = Array.isArray(value) ? value : value ? [value] : [];
+
+  return Array.from(
+    new Set(
+      values
+        .filter((item): item is string => typeof item === 'string')
+        .map((item) => normalizeText(item))
+        .filter(Boolean),
+    ),
+  );
+};
+
+const findVideoObject = (input: unknown): Record<string, unknown> | null => {
+  if (!input || typeof input !== 'object') {
+    return null;
+  }
+
+  if (Array.isArray(input)) {
+    for (const item of input) {
+      const found = findVideoObject(item);
+
+      if (found) {
+        return found;
+      }
+    }
+
+    return null;
+  }
+
+  const item = input as Record<string, unknown>;
+  const type = item['@type'];
+
+  if (
+    type === 'VideoObject' ||
+    (Array.isArray(type) && type.some((entry) => entry === 'VideoObject'))
+  ) {
+    return item;
+  }
+
+  return (
+    findVideoObject(item['@graph']) ||
+    findVideoObject(item.itemListElement) ||
+    findVideoObject(item.mainEntity) ||
+    null
+  );
+};
+
+const parseJsonLdVideoObject = ($: CheerioAPI): Record<string, unknown> => {
+  const scripts = $('script[type="application/ld+json"]')
+    .map((_, element) => normalizeText($(element).text()))
+    .get()
+    .filter(Boolean);
+
+  for (const script of scripts) {
+    try {
+      const parsed = JSON.parse(script) as unknown;
+      const videoObject = findVideoObject(parsed);
+
+      if (videoObject) {
+        return videoObject;
+      }
+    } catch {
+      // Ignore malformed JSON-LD blocks and keep searching for a valid VideoObject.
+    }
+  }
+
+  return {};
+};
+
+const parseTaxonomy = ($: CheerioAPI, selector: string): string[] => {
+  const values = $(selector)
+    .map((_, element) => normalizeText($(element).text()))
+    .get()
+    .filter(Boolean);
+
+  return Array.from(new Set(values));
+};
+
+const parseEngagement = (
+  $: CheerioAPI,
+  html: string,
+): { ratingPercent: number; voteCount: number } => {
+  const voteText =
+    normalizeText($('[class*="rating"], [class*="vote"]').first().text()) ||
+    html;
+  const voteMatch = voteText.match(
+    /([0-9]+(?:[.,][0-9]+)?\s*[KMB]?)\s*votes?/i,
+  );
+  const ratingMatch = voteText.match(/([0-9]+(?:\.[0-9]+)?)\s*%/i);
+
+  return {
+    voteCount: voteMatch ? parseNumberWithSuffix(voteMatch[1]) : 0,
+    ratingPercent: ratingMatch ? Number.parseFloat(ratingMatch[1]) : 0,
+  };
+};
+
+const parseWatchCount = (
+  jsonLd: Record<string, unknown>,
+  views: string,
+): number => {
+  const interactionStatistic = jsonLd.interactionStatistic;
+  const candidates = Array.isArray(interactionStatistic)
+    ? interactionStatistic
+    : interactionStatistic
+      ? [interactionStatistic]
+      : [];
+
+  for (const candidate of candidates) {
+    if (candidate && typeof candidate === 'object') {
+      const value = (candidate as Record<string, unknown>).userInteractionCount;
+
+      if (typeof value === 'number' && Number.isFinite(value)) {
+        return value;
+      }
+
+      const parsed = parseNumberWithSuffix(
+        typeof value === 'string' ? value : '',
+      );
+
+      if (parsed > 0) {
+        return parsed;
+      }
+    }
+  }
+
+  return parseNumberWithSuffix(views);
+};
+
 const readDetailViews = ($: CheerioAPI, html: string): string => {
   const directViews =
     normalizeText($('#v-views strong.mobile-hide').first().text()) ||
@@ -482,8 +699,11 @@ const details = async ({ url }: DetailsInput): Promise<VideoDetailsResult> => {
   const response = await request.get(url);
   const html = response.data;
   const $ = load(html);
+  const jsonLd = parseJsonLdVideoObject($);
   const image = readMeta($, 'og:image');
   const files = extractFiles(html, image);
+  const duration = readMeta($, 'og:duration');
+  const engagement = parseEngagement($, html);
   const sizeMatch = html.match(
     /html5player\.setVideoSize\((\d+)\s*,\s*(\d+)\)/i,
   );
@@ -496,12 +716,38 @@ const details = async ({ url }: DetailsInput): Promise<VideoDetailsResult> => {
   return {
     title: readMeta($, 'og:title'),
     url,
-    duration: readMeta($, 'og:duration'),
-    image,
-    views: readDetailViews($, html),
+    videoId: parseVideoId(url),
+    duration,
+    durationSeconds:
+      parseDurationSeconds(
+        typeof jsonLd.duration === 'string' ? jsonLd.duration : '',
+      ) || parseDurationSeconds(duration),
+    thumbnailUrls:
+      parseStringArray(jsonLd.thumbnailUrl).length > 0
+        ? parseStringArray(jsonLd.thumbnailUrl)
+        : image
+          ? [image]
+          : [],
+    watchCount: parseWatchCount(jsonLd, readDetailViews($, html)),
+    voteCount: engagement.voteCount,
+    ratingPercent: engagement.ratingPercent,
     videoType: readMeta($, 'og:video:type') || readMeta($, 'og:type'),
     videoWidth: size.width,
     videoHeight: size.height,
+    uploadDate:
+      typeof jsonLd.uploadDate === 'string'
+        ? normalizeText(jsonLd.uploadDate)
+        : '',
+    description:
+      typeof jsonLd.description === 'string'
+        ? normalizeText(jsonLd.description)
+        : '',
+    contentUrl:
+      typeof jsonLd.contentUrl === 'string'
+        ? normalizeText(jsonLd.contentUrl)
+        : '',
+    tags: parseTaxonomy($, 'a[href*="/tags/"]'),
+    categories: parseTaxonomy($, 'a[href*="/c/"]'),
     files,
   };
 };
@@ -531,6 +777,14 @@ export const __private__ = {
   parseResolutions,
   parseVideo,
   parseViews,
+  parseDurationSeconds,
+  parseEngagement,
+  parseJsonLdVideoObject,
+  parseNumberWithSuffix,
+  parseStringArray,
+  parseTaxonomy,
+  parseVideoId,
+  parseWatchCount,
   readDetailViews,
   readMeta,
   resolveVideoSize,

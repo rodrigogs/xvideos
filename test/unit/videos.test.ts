@@ -77,7 +77,29 @@ const detailHtml = `
 <meta property="og:duration" content="302" />
 <meta property="og:image" content="https://cdn.example/thumb.jpg" />
 <meta property="og:type" content="video.movie" />
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "VideoObject",
+  "name": "Fixture Title",
+  "description": "Fixture Description",
+  "thumbnailUrl": ["https://cdn.example/thumb.jpg", "https://cdn.example/thumb-2.jpg"],
+  "uploadDate": "2026-04-20T10:00:00+00:00",
+  "duration": "PT5M2S",
+  "contentUrl": "https://cdn.example/stream.mp4",
+  "interactionStatistic": {
+    "@type": "InteractionCounter",
+    "interactionType": {"@type": "WatchAction"},
+    "userInteractionCount": 123456
+  }
+}
+</script>
 <div id="v-views"><span class="icon-f icf-eye"></span><strong class="mobile-hide">177,775</strong></div>
+<div class="rating-infos">3,050 votes 99.0%</div>
+<a href="/tags/amateur">Amateur</a>
+<a href="/tags/test">Test</a>
+<a href="/c/amateur-14">Amateur</a>
+<a href="/c/new-12">New</a>
 <script>
 html5player.setVideoUrlLow('https://cdn.example/low.mp4');
 html5player.setVideoUrlHigh("https://cdn.example/high.mp4");
@@ -87,6 +109,21 @@ html5player.setThumbUrl169('https://cdn.example/thumb169.jpg');
 html5player.setThumbSlide('https://cdn.example/slide.jpg');
 html5player.setThumbSlideBig('https://cdn.example/slide-big.jpg');
 </script>
+`;
+
+const minimalDetailHtml = `
+<meta property="og:title" content="Minimal Fixture" />
+<meta property="og:duration" content="45" />
+<meta property="og:type" content="video.movie" />
+<div id="v-views"><strong>12k</strong></div>
+`;
+
+const imageFallbackDetailHtml = `
+<meta property="og:title" content="Image Fallback Fixture" />
+<meta property="og:duration" content="60" />
+<meta property="og:image" content="https://cdn.example/fallback-thumb.jpg" />
+<meta property="og:type" content="video.movie" />
+<div id="v-views"><strong>8.1K</strong></div>
 `;
 
 const manifest = `
@@ -165,14 +202,14 @@ describe('videos helpers', () => {
 
     expect(classicVideo).toEqual({
       url: 'https://www.xvideos.com/video.one/title',
-      path: '/video.one/title',
+      videoId: 'video.one',
       title: 'Video One',
       duration: '5 min',
       profile: {
         name: 'Tester',
         url: 'https://www.xvideos.com/profiles/tester',
       },
-      views: '1.2M Views',
+      watchCount: 1_200_000,
     });
 
     const v4$ = load(bestListingHtml);
@@ -180,7 +217,7 @@ describe('videos helpers', () => {
       v4$,
       v4$('.thumb-block.video').get(0),
     );
-    expect(v4Video?.views).toBe('7.5M Views');
+    expect(v4Video?.watchCount).toBe(7_500_000);
     expect(v4Video?.profile.name).toBe('Bestie');
 
     expect(
@@ -361,6 +398,139 @@ describe('videos helpers', () => {
       ]),
     ).toBe('VALUE');
     expect(__private__.extractFirstMatch('prefix', [/(missing)/])).toBe('');
+
+    expect(__private__.parseDurationSeconds('PT1H2M3S')).toBe(3723);
+    expect(__private__.parseDurationSeconds('PT45S')).toBe(45);
+    expect(__private__.parseDurationSeconds('PT2M')).toBe(120);
+    expect(__private__.parseDurationSeconds('302')).toBe(302);
+    expect(__private__.parseDurationSeconds('5 min 2 sec')).toBe(302);
+    expect(__private__.parseDurationSeconds('1 hour 2 min 3 sec')).toBe(3723);
+    expect(__private__.parseDurationSeconds('')).toBe(0);
+    expect(__private__.parseDurationSeconds('unknown')).toBe(0);
+
+    expect(
+      __private__.parseVideoId('https://www.xvideos.com/video.one/title'),
+    ).toBe('video.one');
+    expect(__private__.parseVideoId('/video.two/title')).toBe('video.two');
+    expect(__private__.parseVideoId('/foo/bar')).toBe('');
+
+    expect(__private__.parseNumberWithSuffix('7.5M')).toBe(7_500_000);
+    expect(__private__.parseNumberWithSuffix('12K')).toBe(12_000);
+    expect(__private__.parseNumberWithSuffix('1B')).toBe(1_000_000_000);
+    expect(__private__.parseNumberWithSuffix('177,775')).toBe(177_775);
+    expect(__private__.parseNumberWithSuffix('not-a-number')).toBe(0);
+
+    expect(__private__.parseStringArray([' a ', '', 'a', 'b'])).toEqual([
+      'a',
+      'b',
+    ]);
+    expect(__private__.parseStringArray(' single ')).toEqual(['single']);
+
+    expect(__private__.parseTaxonomy($, 'a[href*="/tags/"]')).toEqual([
+      'Amateur',
+      'Test',
+    ]);
+
+    expect(__private__.parseEngagement($, detailHtml)).toEqual({
+      voteCount: 3050,
+      ratingPercent: 99,
+    });
+    expect(
+      __private__.parseEngagement(load('<div></div>'), 'no votes'),
+    ).toEqual({
+      voteCount: 0,
+      ratingPercent: 0,
+    });
+
+    const jsonLd = __private__.parseJsonLdVideoObject($);
+    expect(jsonLd.uploadDate).toBe('2026-04-20T10:00:00+00:00');
+    expect(__private__.parseWatchCount(jsonLd, '177,775')).toBe(123_456);
+    expect(
+      __private__.parseWatchCount(
+        {
+          interactionStatistic: {
+            userInteractionCount: '1.2M',
+          },
+        },
+        '177,775',
+      ),
+    ).toBe(1_200_000);
+    expect(
+      __private__.parseWatchCount(
+        {
+          interactionStatistic: {
+            userInteractionCount: 'invalid',
+          },
+        },
+        '177,775',
+      ),
+    ).toBe(177_775);
+    expect(
+      __private__.parseWatchCount(
+        {
+          interactionStatistic: [
+            null,
+            'x',
+            {
+              userInteractionCount: 10,
+            },
+          ],
+        },
+        '0',
+      ),
+    ).toBe(10);
+    expect(
+      __private__.parseWatchCount(
+        {
+          interactionStatistic: [
+            {
+              userInteractionCount: '9K',
+            },
+          ],
+        },
+        '0',
+      ),
+    ).toBe(9000);
+    expect(
+      __private__.parseWatchCount(
+        {
+          interactionStatistic: {
+            userInteractionCount: true,
+          },
+        },
+        '100',
+      ),
+    ).toBe(100);
+
+    expect(
+      __private__.parseJsonLdVideoObject(
+        load(
+          '<script type="application/ld+json">{bad json</script><script type="application/ld+json">{"@context":"https://schema.org","mainEntity":{"@type":"VideoObject","name":"ok"}}</script>',
+        ),
+      ).name,
+    ).toBe('ok');
+    expect(__private__.parseJsonLdVideoObject(load('<div></div>'))).toEqual({});
+    expect(
+      __private__.parseJsonLdVideoObject(
+        load(
+          '<script type="application/ld+json">[{"@type":"Thing"},{"@type":"VideoObject","name":"array-hit"}]</script>',
+        ),
+      ).name,
+    ).toBe('array-hit');
+    expect(
+      __private__.parseJsonLdVideoObject(
+        load(
+          '<script type="application/ld+json">{"@type":["Thing","VideoObject"],"name":"array-type-hit"}</script>',
+        ),
+      ).name,
+    ).toBe('array-type-hit');
+    expect(
+      __private__.parseJsonLdVideoObject(
+        load(
+          '<script type="application/ld+json">[{"@type":"Thing"},{"@type":"Other"}]</script>',
+        ),
+      ),
+    ).toEqual({});
 
     expect(
       __private__.extractFiles(detailHtml, 'https://cdn.example/fallback.jpg'),
@@ -585,12 +755,24 @@ describe('videos helpers', () => {
     ).resolves.toEqual({
       title: 'Fixture Title',
       url: 'https://www.xvideos.com/video.one/title',
+      videoId: 'video.one',
       duration: '302',
-      image: 'https://cdn.example/thumb.jpg',
-      views: '177,775',
+      durationSeconds: 302,
+      thumbnailUrls: [
+        'https://cdn.example/thumb.jpg',
+        'https://cdn.example/thumb-2.jpg',
+      ],
+      watchCount: 123456,
+      voteCount: 3050,
+      ratingPercent: 99,
       videoType: 'video.movie',
       videoWidth: '1280',
       videoHeight: '720',
+      uploadDate: '2026-04-20T10:00:00+00:00',
+      description: 'Fixture Description',
+      contentUrl: 'https://cdn.example/stream.mp4',
+      tags: ['Amateur', 'Test'],
+      categories: ['Amateur', 'New'],
       files: {
         low: 'https://cdn.example/low.mp4',
         high: 'https://cdn.example/high.mp4',
@@ -600,6 +782,59 @@ describe('videos helpers', () => {
         thumbSlide: 'https://cdn.example/slide.jpg',
         thumbSlideBig: 'https://cdn.example/slide-big.jpg',
       },
+    });
+
+    requestGet.mockResolvedValueOnce({
+      data: minimalDetailHtml,
+      statusCode: 200,
+      url: 'https://www.xvideos.com/video.minimal/title',
+    });
+    await expect(
+      videos.details({ url: 'https://www.xvideos.com/video.minimal/title' }),
+    ).resolves.toEqual({
+      title: 'Minimal Fixture',
+      url: 'https://www.xvideos.com/video.minimal/title',
+      videoId: 'video.minimal',
+      duration: '45',
+      durationSeconds: 45,
+      thumbnailUrls: [],
+      watchCount: 12000,
+      voteCount: 0,
+      ratingPercent: 0,
+      videoType: 'video.movie',
+      videoWidth: '',
+      videoHeight: '',
+      uploadDate: '',
+      description: '',
+      contentUrl: '',
+      tags: [],
+      categories: [],
+      files: {
+        low: '',
+        high: '',
+        HLS: '',
+        thumb: '',
+        thumb69: '',
+        thumbSlide: '',
+        thumbSlideBig: '',
+      },
+    });
+
+    requestGet.mockResolvedValueOnce({
+      data: imageFallbackDetailHtml,
+      statusCode: 200,
+      url: 'https://www.xvideos.com/video.image-fallback/title',
+    });
+    await expect(
+      videos.details({
+        url: 'https://www.xvideos.com/video.image-fallback/title',
+      }),
+    ).resolves.toMatchObject({
+      title: 'Image Fallback Fixture',
+      videoId: 'video.image-fallback',
+      durationSeconds: 60,
+      thumbnailUrls: ['https://cdn.example/fallback-thumb.jpg'],
+      watchCount: 8100,
     });
 
     await expect(videos.details({ url: '' })).rejects.toThrow('Invalid url');
