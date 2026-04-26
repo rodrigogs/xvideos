@@ -3,3 +3,5 @@
 *.iml
 /.env
 coverage
+/test-report.junit.xml
+/dist/
