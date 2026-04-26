@@ -23,35 +23,35 @@ import xvideos from '@rodrigogs/xvideos';
 ```javascript
 const xvideos = require('@rodrigogs/xvideos');
 
-//-- Inside an async function --//
+(async () => {
+  // Retrieve fresh videos from the first page
+  const fresh = await xvideos.videos.fresh({ page: 1 });
+  // Log details of the retrieved videos
+  console.log(fresh.videos); // Array of video objects with properties like url, path, title, duration, profile, views
+  console.log(fresh.pagination.page); // Current page number
+  console.log(fresh.pagination.pages); // Array of available page numbers
+  console.log(fresh.hasNext()); // Check if there is a next page
+  console.log(fresh.hasPrevious()); // Check if there is a previous page
 
-// Retrieve fresh videos from the first page
-const fresh = await xvideos.videos.fresh({ page: 1 });
-// Log details of the retrieved videos
-console.log(fresh.videos); // Array of video objects with properties like url, path, title, duration, profile, views
-console.log(fresh.pagination.page); // Current page number
-console.log(fresh.pagination.pages); // Array of available page numbers
-console.log(fresh.hasNext()); // Check if there is a next page
-console.log(fresh.hasPrevious()); // Check if there is a previous page
+  // Retrieve the next page of fresh videos
+  const nextPage = await fresh.next();
+  // Log details of the next page
+  console.log(nextPage.pagination.page); // Updated current page number
+  console.log(nextPage.hasNext()); // Check if the next page exists
+  console.log(nextPage.hasPrevious()); // Check if the previous page exists
 
-// Retrieve the next page of fresh videos
-const nextPage = await fresh.next();
-// Log details of the next page
-console.log(nextPage.pagination.page); // Updated current page number
-console.log(nextPage.hasNext()); // Check if the next page exists
-console.log(nextPage.hasPrevious()); // Check if the previous page exists
+  // Retrieve the previous page of fresh videos
+  const previousPage = await fresh.previous();
+  // Log details of the previous page
+  console.log(previousPage.pagination.page); // Updated current page number
+  console.log(previousPage.hasNext()); // Check if the next page exists
+  console.log(previousPage.hasPrevious()); // Check if the previous page exists
 
-// Retrieve the previous page of fresh videos
-const previousPage = await fresh.previous();
-// Log details of the previous page
-console.log(previousPage.pagination.page); // Updated current page number
-console.log(previousPage.hasNext()); // Check if the next page exists
-console.log(previousPage.hasPrevious()); // Check if the previous page exists
-
-// Retrieve detailed information about a specific video
-const detail = await xvideos.videos.details(fresh.videos[0]);
-// Log details of the specific video
-console.log(detail); // Detailed video object with properties like title, duration, image, videoType, views, files
+  // Retrieve detailed information about a specific video
+  const detail = await xvideos.videos.details(fresh.videos[0]);
+  // Log details of the specific video
+  console.log(detail); // Detailed video object with properties like title, duration, image, videoType, views, files
+})();
 ```
 
 ## Development
