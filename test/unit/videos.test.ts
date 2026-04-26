@@ -122,6 +122,7 @@ describe('videos helpers', () => {
         'https:\\/\\/cdn.example\\/x\\u0026y&amp;z ',
       ),
     ).toBe('https://cdn.example/x&y&z');
+    expect(__private__.decodeEscapedValue('&amp;quot;')).toBe('&quot;');
   });
 
   it('validates pages and deduplicates page arrays', () => {
