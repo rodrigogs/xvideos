@@ -5,14 +5,23 @@ on:
     branches: [ master ]
   pull_request:
     branches: [ master ]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
-  test:
+  quality:
+    name: quality (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+
     strategy:
+      fail-fast: false
       matrix:
         node-version: [20.x, 22.x, 24.x]
 
@@ -24,14 +33,18 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: npm
+          cache-dependency-path: package-lock.json
 
       - run: npm ci
       - run: npm run build
       - run: npm run lint
-      - run: npm test
+      - run: npm run test:unit
 
-  coverage:
+  integration:
+    name: integration (Node 22.x)
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: quality
 
     steps:
       - uses: actions/checkout@v4
@@ -41,6 +54,34 @@ jobs:
         with:
           node-version: 22.x
           cache: npm
+          cache-dependency-path: package-lock.json
+
+      - run: npm ci
+      - run: npm run test:integration
+
+  coverage:
+    name: coverage (Node 22.x)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: quality
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 22.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: npm
+          cache-dependency-path: package-lock.json
 
       - run: npm ci
       - run: npm run coverage
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage
+          if-no-files-found: error
+          retention-days: 7
