@@ -87,7 +87,7 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           slug: rodrigogs/xvideos
-          files: ./coverage/clover.xml
+          files: ./coverage/lcov.info
           disable_search: true
           # Keep false so forks and first-time setups don't fail CI before Codecov is configured
           fail_ci_if_error: false
