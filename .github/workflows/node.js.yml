@@ -81,9 +81,11 @@ jobs:
       - run: npm ci
       - run: npm run coverage
 
-      - name: Upload coverage to Codecov
+      - name: Upload coverage reports to Codecov
+        if: ${{ !cancelled() && secrets.CODECOV_TOKEN != '' }}
         uses: codecov/codecov-action@v5
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage/lcov.info
           # Keep false so forks and first-time setups don't fail CI before Codecov is configured
           fail_ci_if_error: false
@@ -95,3 +97,29 @@ jobs:
           path: coverage
           if-no-files-found: error
           retention-days: 7
+
+  test-results:
+    name: test results (Node 22.x)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: quality
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 22.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - run: npm ci
+      - run: npm run test:junit
+
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() && secrets.CODECOV_TOKEN != '' }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./test-report.junit.xml
