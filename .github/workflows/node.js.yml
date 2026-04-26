@@ -86,6 +86,7 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          slug: rodrigogs/xvideos
           files: ./coverage/clover.xml
           disable_search: true
           # Keep false so forks and first-time setups don't fail CI before Codecov is configured
@@ -123,6 +124,7 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          slug: rodrigogs/xvideos
           report_type: test_results
           files: ./test-report.junit.xml
           disable_search: true
