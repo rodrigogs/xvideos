@@ -534,22 +534,25 @@ describe('videos helpers', () => {
     });
 
     vi.useFakeTimers();
-    vi.setSystemTime(new Date('2026-04-15T00:00:00Z'));
-    requestGet
-      .mockResolvedValueOnce({
-        data: '<main id="best"></main>',
-        statusCode: 200,
-        url: 'https://www.xvideos.com/best',
-      })
-      .mockResolvedValueOnce({
-        data: bestListingHtml,
-        statusCode: 200,
-        url: 'https://www.xvideos.com/best/2026-04',
+    try {
+      vi.setSystemTime(new Date('2026-04-15T00:00:00Z'));
+      requestGet
+        .mockResolvedValueOnce({
+          data: '<main id="best"></main>',
+          statusCode: 200,
+          url: 'https://www.xvideos.com/best',
+        })
+        .mockResolvedValueOnce({
+          data: bestListingHtml,
+          statusCode: 200,
+          url: 'https://www.xvideos.com/best/2026-04',
+        });
+      await expect(videos.best()).resolves.toMatchObject({
+        pagination: { page: 1, pages: [1, 2] },
       });
-    await expect(videos.best()).resolves.toMatchObject({
-      pagination: { page: 1, pages: [1, 2] },
-    });
-    vi.useRealTimers();
+    } finally {
+      vi.useRealTimers();
+    }
 
     requestGet
       .mockResolvedValueOnce({

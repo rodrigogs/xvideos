@@ -32,10 +32,13 @@ describe('base helpers', () => {
 
   it('waits using delay', async () => {
     vi.useFakeTimers();
-    const promise = delay(25);
-    await vi.advanceTimersByTimeAsync(25);
-    await expect(promise).resolves.toBeUndefined();
-    vi.useRealTimers();
+    try {
+      const promise = delay(25);
+      await vi.advanceTimersByTimeAsync(25);
+      await expect(promise).resolves.toBeUndefined();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('retries retryable failures and stringifies non-string bodies', async () => {
