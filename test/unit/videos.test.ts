@@ -708,4 +708,68 @@ describe('videos helpers', () => {
       pagination: { page: 1 },
     });
   });
+
+  it('validates video urls and rejects invalid formats', () => {
+    // Test empty URL
+    expect(() => __private__.assertVideoUrl('')).toThrow('Invalid url');
+
+    // Test invalid URL format (should trigger catch block at line 55)
+    expect(() => __private__.assertVideoUrl('not a url')).toThrow('Invalid url');
+
+    // Test non-https protocol
+    expect(() => __private__.assertVideoUrl('http://xvideos.com/video')).toThrow(
+      'Invalid url',
+    );
+
+    // Test wrong hostname
+    expect(() => __private__.assertVideoUrl('https://example.com/video')).toThrow(
+      'Invalid url',
+    );
+
+    // Test valid xvideos.com URL
+    expect(() =>
+      __private__.assertVideoUrl('https://www.xvideos.com/video/123'),
+    ).not.toThrow();
+
+    // Test valid xvideos.com subdomain URL
+    expect(() =>
+      __private__.assertVideoUrl('https://xvideos.com/video/456'),
+    ).not.toThrow();
+  });
+
+  it('resolves video size with invalid hls urls', async () => {
+    // Test invalid HLS URL format (should trigger catch block at line 449)
+    await expect(
+      __private__.resolveVideoSize(
+        {
+          low: '',
+          high: '',
+          HLS: 'not a valid url',
+          thumb: '',
+          thumb69: '',
+          thumbSlide: '',
+          thumbSlideBig: '',
+        },
+        '',
+        '',
+      ),
+    ).resolves.toEqual({ width: '', height: '' });
+
+    // Test non-https HLS URL (should trigger return at line 453)
+    await expect(
+      __private__.resolveVideoSize(
+        {
+          low: '',
+          high: '',
+          HLS: 'http://cdn.example/master.m3u8',
+          thumb: '',
+          thumb69: '',
+          thumbSlide: '',
+          thumbSlideBig: '',
+        },
+        '',
+        '',
+      ),
+    ).resolves.toEqual({ width: '', height: '' });
+  });
 });
