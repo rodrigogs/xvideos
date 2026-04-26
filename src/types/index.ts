@@ -1,5 +1,3 @@
-import xvideos from "./xvideos.js";
-
 export type {
 	DetailsInput,
 	Pagination,
@@ -9,8 +7,4 @@ export type {
 	VideoListResult,
 	VideoProfile,
 	VideoSummary,
-} from "./types/index.js";
-
-const api = xvideos;
-
-export default api;
+} from "./videos.js";

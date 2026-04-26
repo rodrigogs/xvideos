@@ -1,71 +1,25 @@
 import { load, type CheerioAPI } from "cheerio";
 import type { Element } from "domhandler";
+import type {
+	DetailsInput,
+	SearchOptions,
+	VideoDetailsResult,
+	VideoFiles,
+	VideoListResult,
+	VideoSummary,
+} from "./types/videos.js";
 
 import base from "./base.js";
-
-export type VideoProfile = {
-	name: string;
-	url: string;
-};
-
-export type VideoSummary = {
-	url: string;
-	path: string;
-	title: string;
-	duration: string;
-	profile: VideoProfile;
-	views: string;
-};
-
-export type Pagination = {
-	page: number;
-	pages: number[];
-};
-
-export type VideoListResult = {
-	videos: VideoSummary[];
-	pagination: Pagination;
-	refresh: () => Promise<VideoListResult>;
-	hasNext: () => boolean;
-	next: () => Promise<VideoListResult>;
-	hasPrevious: () => boolean;
-	previous: () => Promise<VideoListResult>;
-};
-
-export type DetailsInput = {
-	url: string;
-};
-
-export type VideoFiles = {
-	low: string;
-	high: string;
-	HLS: string;
-	thumb: string;
-	thumb69: string;
-	thumbSlide: string;
-	thumbSlideBig: string;
-};
-
-export type VideoDetailsResult = {
-	title: string;
-	url: string;
-	duration: string;
-	image: string;
-	views: string;
-	videoType: string;
-	videoWidth: string;
-	videoHeight: string;
-	files: VideoFiles;
-};
-
-export type SearchOptions = {
-	page?: number;
-	k?: string;
-	sort?: string;
-	durf?: string;
-	datef?: string;
-	quality?: string;
-};
+export type {
+	DetailsInput,
+	Pagination,
+	SearchOptions,
+	VideoDetailsResult,
+	VideoFiles,
+	VideoListResult,
+	VideoProfile,
+	VideoSummary,
+} from "./types/videos.js";
 
 const request = base.createRequest();
 
@@ -436,9 +390,12 @@ const extractFiles = (html: string, image: string): VideoFiles => {
 	return files;
 };
 
-const parseResolutions = (
-	manifest: string,
-): Array<{ width: number; height: number }> => {
+type VideoResolution = {
+	width: number;
+	height: number;
+};
+
+const parseResolutions = (manifest: string): VideoResolution[] => {
 	return Array.from(manifest.matchAll(/RESOLUTION=(\d+)x(\d+)/gi), (match) => ({
 		width: Number.parseInt(match[1], 10),
 		height: Number.parseInt(match[2], 10),

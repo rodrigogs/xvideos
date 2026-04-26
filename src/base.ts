@@ -1,20 +1,9 @@
 import { gotScraping } from "got-scraping";
-
-type TransportResponse = {
-	body: unknown;
-	statusCode?: number;
-	url: string;
-};
-
-type Transport = (options: {
-	url: string;
-	headers: Record<string, string>;
-	http2: boolean;
-	responseType: "text";
-	throwHttpErrors: true;
-	retry: { limit: 0 };
-	timeout: { request: number };
-}) => Promise<TransportResponse>;
+import type {
+	RequestOptions,
+	RequestResponse,
+	RetryableError,
+} from "./types/base.js";
 
 export const BASE_URL = "https://www.xvideos.com";
 
@@ -22,23 +11,6 @@ const DEFAULT_HEADERS = {
 	"user-agent":
 		"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36",
 	"accept-language": "en-US,en;q=0.9",
-};
-
-type RequestOptions = {
-	headers?: Record<string, string>;
-	sleep?: (milliseconds: number) => Promise<void>;
-	transport?: Transport;
-};
-
-type RequestResponse = {
-	data: string;
-	statusCode?: number;
-	url: string;
-};
-
-type RetryableError = Error & {
-	code?: string;
-	name?: string;
 };
 
 const REQUEST_TIMEOUT = 15_000;
