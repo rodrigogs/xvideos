@@ -1,8 +1,8 @@
 # xvideos
 
-[![Build Status](https://travis-ci.org/rodrigogs/xvideos.svg?branch=master)](https://travis-ci.org/rodrigogs/xvideos)
-[![Code Climate](https://codeclimate.com/github/rodrigogs/xvideos/badges/gpa.svg)](https://codeclimate.com/github/rodrigogs/xvideos)
-[![Test Coverage](https://codeclimate.com/github/rodrigogs/xvideos/badges/coverage.svg)](https://codeclimate.com/github/rodrigogs/xvideos/coverage)
+[![CI](https://github.com/rodrigogs/xvideos/actions/workflows/node.js.yml/badge.svg)](https://github.com/rodrigogs/xvideos/actions/workflows/node.js.yml)
+[![codecov](https://codecov.io/gh/rodrigogs/xvideos/graph/badge.svg)](https://codecov.io/gh/rodrigogs/xvideos)
+[![CodeQL](https://github.com/rodrigogs/xvideos/actions/workflows/codeql.yml/badge.svg)](https://github.com/rodrigogs/xvideos/actions/workflows/codeql.yml)
 
 A [Node.js](https://nodejs.org) library for the [xvideos.com](https://www.xvideos.com) API.
 
