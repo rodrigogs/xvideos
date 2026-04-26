@@ -714,17 +714,19 @@ describe('videos helpers', () => {
     expect(() => __private__.assertVideoUrl('')).toThrow('Invalid url');
 
     // Test invalid URL format (should trigger catch block at line 55)
-    expect(() => __private__.assertVideoUrl('not a url')).toThrow('Invalid url');
+    expect(() => __private__.assertVideoUrl('not a url')).toThrow(
+      'Invalid url',
+    );
 
     // Test non-https protocol
-    expect(() => __private__.assertVideoUrl('http://xvideos.com/video')).toThrow(
-      'Invalid url',
-    );
+    expect(() =>
+      __private__.assertVideoUrl('http://xvideos.com/video'),
+    ).toThrow('Invalid url');
 
     // Test wrong hostname
-    expect(() => __private__.assertVideoUrl('https://example.com/video')).toThrow(
-      'Invalid url',
-    );
+    expect(() =>
+      __private__.assertVideoUrl('https://example.com/video'),
+    ).toThrow('Invalid url');
 
     // Test valid xvideos.com URL
     expect(() =>
