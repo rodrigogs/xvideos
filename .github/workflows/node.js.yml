@@ -86,7 +86,8 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: coverage/lcov.info
+          files: ./coverage/clover.xml
+          disable_search: true
           # Keep false so forks and first-time setups don't fail CI before Codecov is configured
           fail_ci_if_error: false
 
@@ -119,7 +120,10 @@ jobs:
 
       - name: Upload test results to Codecov
         if: ${{ !cancelled() && (github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork) }}
-        uses: codecov/test-results-action@v1
+        uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          report_type: test_results
           files: ./test-report.junit.xml
+          disable_search: true
+          fail_ci_if_error: false
