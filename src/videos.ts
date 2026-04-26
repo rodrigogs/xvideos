@@ -3,7 +3,11 @@ import type { Element } from 'domhandler';
 import base from './base.js';
 import type {
   DetailsInput,
+  DetailsManyOptions,
   SearchOptions,
+  VideoDetailsBatchFailure,
+  VideoDetailsBatchItem,
+  VideoDetailsBatchResult,
   VideoDetailsResult,
   VideoFiles,
   VideoListResult,
@@ -12,8 +16,12 @@ import type {
 
 export type {
   DetailsInput,
+  DetailsManyOptions,
   Pagination,
   SearchOptions,
+  VideoDetailsBatchFailure,
+  VideoDetailsBatchItem,
+  VideoDetailsBatchResult,
   VideoDetailsResult,
   VideoFiles,
   VideoListResult,
@@ -117,26 +125,124 @@ const parseVideo = ($: CheerioAPI, element: Element): VideoSummary | null => {
   const profileName =
     normalizeText(profileLink.find('.name').first().text()) ||
     normalizeText(profileLink.text());
+  const duration = normalizeText(
+    $video
+      .find(
+        '.video-metadata .duration, .duration-container .duration, p.metadata .duration, p.title .duration',
+      )
+      .first()
+      .text(),
+  );
+  const thumbnailCandidate = normalizeText(
+    link.find('img').first().attr('data-src') ||
+      link.find('img').first().attr('src') ||
+      link.find('img').first().attr('data-srcset')?.split(/\s|,/)[0] ||
+      '',
+  );
 
   return {
     url: base.resolveUrl(path),
     videoId: parseVideoId(path),
     title:
       normalizeText(titleLink.attr('title')) || normalizeText(titleNode.text()),
-    duration: normalizeText(
-      $video
-        .find(
-          '.video-metadata .duration, .duration-container .duration, p.metadata .duration, p.title .duration',
-        )
-        .first()
-        .text(),
-    ),
+    duration,
+    durationSeconds: parseDurationSeconds(duration),
+    thumbnailUrl: thumbnailCandidate ? base.resolveUrl(thumbnailCandidate) : '',
     profile: {
       name: profileName,
       url: base.resolveUrl(profileLink.attr('href')),
     },
     watchCount: parseNumberWithSuffix(parseViews($video)),
   };
+};
+
+const delay = async (ms: number): Promise<void> => {
+  if (ms <= 0) {
+    return;
+  }
+
+  await new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+};
+
+const normalizeDetailsManyOptions = ({
+  concurrency = 4,
+  retries = 0,
+  retryDelayMs = 0,
+  minDelayMs = 0,
+}: DetailsManyOptions = {}): Required<DetailsManyOptions> => {
+  if (!Number.isInteger(concurrency) || concurrency < 1) {
+    throw new Error(`Invalid concurrency: ${concurrency}`);
+  }
+
+  if (!Number.isInteger(retries) || retries < 0) {
+    throw new Error(`Invalid retries: ${retries}`);
+  }
+
+  if (!Number.isFinite(retryDelayMs) || retryDelayMs < 0) {
+    throw new Error(`Invalid retryDelayMs: ${retryDelayMs}`);
+  }
+
+  if (!Number.isFinite(minDelayMs) || minDelayMs < 0) {
+    throw new Error(`Invalid minDelayMs: ${minDelayMs}`);
+  }
+
+  return {
+    concurrency,
+    retries,
+    retryDelayMs,
+    minDelayMs,
+  };
+};
+
+const createStartGate = (minDelayMs: number): (() => Promise<void>) => {
+  if (minDelayMs <= 0) {
+    return async () => {};
+  }
+
+  let lastStartedAt: number | null = null;
+  let queue = Promise.resolve();
+
+  return async () => {
+    let release!: () => void;
+    const currentTurn = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const previousTurn = queue;
+    queue = currentTurn;
+
+    await previousTurn;
+
+    if (lastStartedAt !== null) {
+      const waitMs = Math.max(0, lastStartedAt + minDelayMs - Date.now());
+      await delay(waitMs);
+    }
+
+    lastStartedAt = Date.now();
+    release();
+  };
+};
+
+const retryDetails = async (
+  input: DetailsInput,
+  retries: number,
+  retryDelayMs: number,
+): Promise<VideoDetailsResult> => {
+  let attempt = 0;
+
+  while (true) {
+    try {
+      return await details(input);
+    } catch (error) {
+      if (attempt >= retries) {
+        throw error;
+      }
+
+      attempt += 1;
+      await delay(retryDelayMs);
+    }
+  }
 };
 
 const buildListResult = (
@@ -752,10 +858,78 @@ const details = async ({ url }: DetailsInput): Promise<VideoDetailsResult> => {
   };
 };
 
+const detailsMany = async (
+  inputs: DetailsInput[],
+  options: DetailsManyOptions = {},
+): Promise<VideoDetailsBatchResult> => {
+  const normalizedInputs = inputs.map(({ url }) => ({ url }));
+
+  if (normalizedInputs.length === 0) {
+    return {
+      items: [],
+      successes: [],
+      failures: [],
+    };
+  }
+
+  const { concurrency, retries, retryDelayMs, minDelayMs } =
+    normalizeDetailsManyOptions(options);
+  const reserveStart = createStartGate(minDelayMs);
+  const items = new Array<VideoDetailsBatchItem>(normalizedInputs.length);
+  let cursor = 0;
+
+  const worker = async (): Promise<void> => {
+    while (true) {
+      const index = cursor;
+      cursor += 1;
+
+      if (index >= normalizedInputs.length) {
+        return;
+      }
+
+      const input = normalizedInputs[index];
+      await reserveStart();
+
+      try {
+        const value = await retryDetails(input, retries, retryDelayMs);
+        items[index] = {
+          input,
+          ok: true,
+          value,
+        };
+      } catch (error) {
+        items[index] = {
+          input,
+          ok: false,
+          error: error instanceof Error ? error : new Error(String(error)),
+        };
+      }
+    }
+  };
+
+  await Promise.all(
+    Array.from(
+      { length: Math.min(concurrency, normalizedInputs.length) },
+      async () => worker(),
+    ),
+  );
+
+  const failures = items.filter(
+    (item): item is VideoDetailsBatchFailure => !item.ok,
+  );
+
+  return {
+    items,
+    successes: items.flatMap((item) => (item.ok ? [item.value] : [])),
+    failures,
+  };
+};
+
 const videos = {
   best,
   dashboard,
   details,
+  detailsMany,
   fresh,
   search,
   verified,
@@ -766,13 +940,16 @@ export const __private__ = {
   assertPage,
   assertVideoUrl,
   buildListResult,
+  createStartGate,
   createIndexQueryCandidates,
   createSearchCandidate,
   decodeEscapedValue,
+  delay,
   extractFiles,
   extractFirstMatch,
   loadListingPage,
   normalizeText,
+  normalizeDetailsManyOptions,
   parsePages,
   parseResolutions,
   parseVideo,
@@ -787,6 +964,7 @@ export const __private__ = {
   parseWatchCount,
   readDetailViews,
   readMeta,
+  retryDetails,
   resolveVideoSize,
   uniqueSortedPages,
 };

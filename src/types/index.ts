@@ -1,7 +1,12 @@
 export type {
   DetailsInput,
+  DetailsManyOptions,
   Pagination,
   SearchOptions,
+  VideoDetailsBatchFailure,
+  VideoDetailsBatchItem,
+  VideoDetailsBatchResult,
+  VideoDetailsBatchSuccess,
   VideoDetailsResult,
   VideoFiles,
   VideoListResult,

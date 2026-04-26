@@ -41,7 +41,7 @@ const classicListingHtml = `
 <div class="pagination"><a>1</a><a>2</a><a>3</a></div>
 <div class="frame-block thumb-block" data-id="1">
 	<div class="thumb-inside">
-		<div class="thumb"><a href="/video.one/title"></a></div>
+    <div class="thumb"><a href="/video.one/title"><img data-src="https://cdn.example/video-one-thumb.jpg" /></a></div>
 	</div>
 	<div class="thumb-under">
 		<p class="title"><a href="/video.one/title" title="Video One">Video One <span class="duration">5 min</span></a></p>
@@ -64,12 +64,44 @@ const bestListingHtml = `
 <main id="best">
 	<div class="pagination"><a>1</a><a>2</a></div>
 	<div class="thumb-block video" data-video="1">
-		<a class="thumb-link" href="/video.best/title"></a>
+		<a class="thumb-link" href="/video.best/title"><img src="https://cdn.example/video-best-thumb.jpg" /></a>
 		<div class="thumb-under"><p class="title"><a href="/video.best/title" title="Best Video">Best Video</a></p></div>
 		<div class="video-metadata"><a class="name" href="/profiles/best"><span class="name">Bestie</span></a><span class="views-count">7.5M</span></div>
 		<div class="duration-container"><span class="duration">10 min</span></div>
 	</div>
 </main>
+`;
+
+const createBatchDetailHtml = (title: string) => `
+<meta property="og:title" content="${title}" />
+<meta property="og:duration" content="60" />
+<meta property="og:image" content="https://cdn.example/${title}.jpg" />
+<meta property="og:type" content="video.movie" />
+<meta property="og:video:width" content="1280" />
+<meta property="og:video:height" content="720" />
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "VideoObject",
+  "name": "${title}",
+  "description": "${title} description",
+  "thumbnailUrl": ["https://cdn.example/${title}.jpg"],
+  "uploadDate": "2026-04-20T10:00:00+00:00",
+  "duration": "PT1M",
+  "contentUrl": "https://cdn.example/${title}.mp4",
+  "interactionStatistic": {
+    "@type": "InteractionCounter",
+    "interactionType": {"@type": "WatchAction"},
+    "userInteractionCount": 1000
+  }
+}
+</script>
+<div id="v-views"><strong>1,000</strong></div>
+<div class="rating-infos">200 votes 95.5%</div>
+<script>
+html5player.setVideoUrlLow('https://cdn.example/${title}-low.mp4');
+html5player.setVideoUrlHigh('https://cdn.example/${title}-high.mp4');
+</script>
 `;
 
 const detailHtml = `
@@ -205,6 +237,8 @@ describe('videos helpers', () => {
       videoId: 'video.one',
       title: 'Video One',
       duration: '5 min',
+      durationSeconds: 300,
+      thumbnailUrl: 'https://cdn.example/video-one-thumb.jpg',
       profile: {
         name: 'Tester',
         url: 'https://www.xvideos.com/profiles/tester',
@@ -219,6 +253,29 @@ describe('videos helpers', () => {
     );
     expect(v4Video?.watchCount).toBe(7_500_000);
     expect(v4Video?.profile.name).toBe('Bestie');
+    expect(v4Video?.durationSeconds).toBe(600);
+    expect(v4Video?.thumbnailUrl).toBe(
+      'https://cdn.example/video-best-thumb.jpg',
+    );
+
+    const srcset$ = load(`
+      <div class="frame-block thumb-block" data-id="4">
+        <div class="thumb"><a href="/video.srcset/title"><img data-srcset="//cdn.example/srcset-thumb.jpg 1x, //cdn.example/srcset-thumb-2.jpg 2x" /></a></div>
+        <div class="thumb-under">
+          <p class="title"><a href="/video.srcset/title">Srcset Title <span class="duration">2 min</span></a></p>
+          <p class="metadata"><a href="/profiles/srcset">Srcset Profile</a></p>
+        </div>
+      </div>
+    `);
+    const srcsetVideo = __private__.parseVideo(
+      srcset$,
+      srcset$('.frame-block.thumb-block').get(0),
+    );
+    expect(srcsetVideo).toMatchObject({
+      title: 'Srcset Title',
+      thumbnailUrl: 'https://cdn.example/srcset-thumb.jpg',
+      durationSeconds: 120,
+    });
 
     expect(
       __private__.parseVideo(
@@ -679,8 +736,13 @@ describe('videos helpers', () => {
       statusCode: 200,
       url: 'https://www.xvideos.com/',
     });
-    await expect(videos.dashboard()).resolves.toMatchObject({
+    const dashboard = await videos.dashboard();
+    expect(dashboard).toMatchObject({
       pagination: { page: 1, pages: [1, 2, 3] },
+    });
+    expect(dashboard.videos[0]).toMatchObject({
+      durationSeconds: 300,
+      thumbnailUrl: 'https://cdn.example/video-one-thumb.jpg',
     });
 
     requestGet.mockResolvedValueOnce({
@@ -844,6 +906,188 @@ describe('videos helpers', () => {
     await expect(
       videos.details({ url: 'https://evil.com/video.one/title' }),
     ).rejects.toThrow('Invalid url');
+  });
+
+  it('loads many details with retries and preserves input order', async () => {
+    const attempts = new Map<string, number>();
+
+    requestGet.mockImplementation(async (url: string) => {
+      const count = (attempts.get(url) ?? 0) + 1;
+      attempts.set(url, count);
+
+      if (url === 'https://www.xvideos.com/video.retry/title' && count === 1) {
+        throw new Error('temporary');
+      }
+
+      if (url === 'https://www.xvideos.com/video.fail/title') {
+        throw new Error('permanent');
+      }
+
+      return {
+        data: createBatchDetailHtml(url.split('/')[3] || 'unknown'),
+        statusCode: 200,
+        url,
+      };
+    });
+
+    const result = await videos.detailsMany(
+      [
+        { url: 'https://www.xvideos.com/video.retry/title' },
+        { url: 'https://www.xvideos.com/video.ok/title' },
+        { url: 'https://www.xvideos.com/video.fail/title' },
+      ],
+      { concurrency: 2, retries: 1 },
+    );
+
+    expect(result.successes).toHaveLength(2);
+    expect(result.failures).toHaveLength(1);
+    expect(result.items.map((item) => item.input.url)).toEqual([
+      'https://www.xvideos.com/video.retry/title',
+      'https://www.xvideos.com/video.ok/title',
+      'https://www.xvideos.com/video.fail/title',
+    ]);
+    expect(result.items[0]).toMatchObject({
+      ok: true,
+      value: {
+        title: 'video.retry',
+      },
+    });
+    expect(result.items[1]).toMatchObject({
+      ok: true,
+      value: {
+        title: 'video.ok',
+      },
+    });
+    expect(result.items[2]).toMatchObject({
+      ok: false,
+      error: expect.any(Error),
+    });
+    expect(attempts.get('https://www.xvideos.com/video.retry/title')).toBe(2);
+    expect(attempts.get('https://www.xvideos.com/video.fail/title')).toBe(2);
+  });
+
+  it('limits batch detail concurrency', async () => {
+    vi.useFakeTimers();
+
+    let active = 0;
+    let maxActive = 0;
+
+    requestGet.mockImplementation(
+      async (url: string) =>
+        new Promise((resolve) => {
+          active += 1;
+          maxActive = Math.max(maxActive, active);
+
+          setTimeout(() => {
+            active -= 1;
+            resolve({
+              data: createBatchDetailHtml(url.split('/')[3] || 'unknown'),
+              statusCode: 200,
+              url,
+            });
+          }, 10);
+        }),
+    );
+
+    try {
+      const pending = videos.detailsMany(
+        [
+          { url: 'https://www.xvideos.com/video.one/title' },
+          { url: 'https://www.xvideos.com/video.two/title' },
+          { url: 'https://www.xvideos.com/video.three/title' },
+        ],
+        { concurrency: 2 },
+      );
+
+      await vi.runAllTimersAsync();
+
+      await expect(pending).resolves.toMatchObject({
+        successes: [
+          { title: 'video.one' },
+          { title: 'video.two' },
+          { title: 'video.three' },
+        ],
+      });
+      expect(maxActive).toBe(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('rate limits batch detail starts', async () => {
+    vi.useFakeTimers();
+
+    const starts: number[] = [];
+
+    requestGet.mockImplementation(async (url: string) => {
+      starts.push(Date.now());
+      return {
+        data: createBatchDetailHtml(url.split('/')[3] || 'unknown'),
+        statusCode: 200,
+        url,
+      };
+    });
+
+    try {
+      const pending = videos.detailsMany(
+        [
+          { url: 'https://www.xvideos.com/video.one/title' },
+          { url: 'https://www.xvideos.com/video.two/title' },
+          { url: 'https://www.xvideos.com/video.three/title' },
+        ],
+        { concurrency: 3, minDelayMs: 50 },
+      );
+
+      await vi.runAllTimersAsync();
+
+      await expect(pending).resolves.toMatchObject({
+        successes: [
+          { title: 'video.one' },
+          { title: 'video.two' },
+          { title: 'video.three' },
+        ],
+      });
+      expect(starts.map((value) => value - starts[0])).toEqual([0, 50, 100]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('handles empty batches and validates crawl options', async () => {
+    await expect(videos.detailsMany([])).resolves.toEqual({
+      items: [],
+      successes: [],
+      failures: [],
+    });
+
+    await expect(__private__.delay(0)).resolves.toBeUndefined();
+    await expect(__private__.createStartGate(0)()).resolves.toBeUndefined();
+
+    expect(() =>
+      __private__.normalizeDetailsManyOptions({ concurrency: 0 }),
+    ).toThrow('Invalid concurrency: 0');
+    expect(() =>
+      __private__.normalizeDetailsManyOptions({ retries: -1 }),
+    ).toThrow('Invalid retries: -1');
+    expect(() =>
+      __private__.normalizeDetailsManyOptions({ retryDelayMs: -1 }),
+    ).toThrow('Invalid retryDelayMs: -1');
+    expect(() =>
+      __private__.normalizeDetailsManyOptions({ minDelayMs: -1 }),
+    ).toThrow('Invalid minDelayMs: -1');
+  });
+
+  it('normalizes non-error batch failures', async () => {
+    requestGet.mockRejectedValueOnce('plain failure');
+
+    const result = await videos.detailsMany([
+      { url: 'https://www.xvideos.com/video.failure/title' },
+    ]);
+
+    expect(result.successes).toEqual([]);
+    expect(result.failures).toHaveLength(1);
+    expect(result.failures[0].error).toBeInstanceOf(Error);
+    expect(result.failures[0].error.message).toBe('plain failure');
   });
 
   it('re-enters public wrappers through refresh callbacks', async () => {

@@ -8,6 +8,8 @@ export type VideoSummary = {
   videoId: string;
   title: string;
   duration: string;
+  durationSeconds: number;
+  thumbnailUrl: string;
   profile: VideoProfile;
   watchCount: number;
 };
@@ -29,6 +31,13 @@ export type VideoListResult = {
 
 export type DetailsInput = {
   url: string;
+};
+
+export type DetailsManyOptions = {
+  concurrency?: number;
+  retries?: number;
+  retryDelayMs?: number;
+  minDelayMs?: number;
 };
 
 export type VideoFiles = {
@@ -60,6 +69,28 @@ export type VideoDetailsResult = {
   tags: string[];
   categories: string[];
   files: VideoFiles;
+};
+
+export type VideoDetailsBatchSuccess = {
+  input: DetailsInput;
+  ok: true;
+  value: VideoDetailsResult;
+};
+
+export type VideoDetailsBatchFailure = {
+  input: DetailsInput;
+  ok: false;
+  error: Error;
+};
+
+export type VideoDetailsBatchItem =
+  | VideoDetailsBatchSuccess
+  | VideoDetailsBatchFailure;
+
+export type VideoDetailsBatchResult = {
+  items: VideoDetailsBatchItem[];
+  successes: VideoDetailsResult[];
+  failures: VideoDetailsBatchFailure[];
 };
 
 export type SearchOptions = {

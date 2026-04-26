@@ -4,16 +4,21 @@ import xvideos from '../../src/index.js';
 
 const assertVideo = (video: {
   duration: string;
+  durationSeconds: number;
   videoId: string;
   profile: { name: string; url: string };
+  thumbnailUrl: string;
   title: string;
   url: string;
   watchCount: number;
 }) => {
   expect(typeof video.duration).toBe('string');
+  expect(typeof video.durationSeconds).toBe('number');
+  expect(video.durationSeconds).toBeGreaterThan(0);
   expect(video.videoId.startsWith('video')).toBe(true);
   expect(typeof video.profile.name).toBe('string');
   expect(typeof video.profile.url).toBe('string');
+  expect(video.thumbnailUrl.startsWith('https://')).toBe(true);
   expect(video.title.length).toBeGreaterThan(0);
   expect(video.url.startsWith('https://')).toBe(true);
   expect(typeof video.watchCount).toBe('number');
@@ -29,8 +34,10 @@ const assertList = (
     refresh: () => Promise<unknown>;
     videos: Array<{
       duration: string;
+      durationSeconds: number;
       videoId: string;
       profile: { name: string; url: string };
+      thumbnailUrl: string;
       title: string;
       url: string;
       watchCount: number;
@@ -127,6 +134,20 @@ describe.sequential('live integration', () => {
     expect(
       Boolean(detail.files.HLS || detail.files.high || detail.files.low),
     ).toBe(true);
+  });
+
+  it('loads batch details for the first two search results', async () => {
+    const list = await xvideos.videos.search({ k: 'test' });
+    const batch = await xvideos.videos.detailsMany(list.videos.slice(0, 2), {
+      concurrency: 2,
+      retries: 1,
+    });
+
+    expect(batch.items).toHaveLength(2);
+    expect(batch.failures).toHaveLength(0);
+    expect(batch.successes).toHaveLength(2);
+    expect(batch.successes[0].videoId.startsWith('video')).toBe(true);
+    expect(batch.successes[1].videoId.startsWith('video')).toBe(true);
   });
 
   it('rejects invalid pages', async () => {

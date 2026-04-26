@@ -27,7 +27,7 @@ const xvideos = require('@rodrigogs/xvideos');
   // Retrieve fresh videos from the first page
   const fresh = await xvideos.videos.fresh({ page: 1 });
   // Log details of the retrieved videos
-  console.log(fresh.videos); // Array of video objects with properties like url, videoId, title, duration, profile, watchCount
+  console.log(fresh.videos); // Array of video objects with properties like url, videoId, title, duration, durationSeconds, thumbnailUrl, profile, watchCount
   console.log(fresh.pagination.page); // Current page number
   console.log(fresh.pagination.pages); // Array of available page numbers
   console.log(fresh.hasNext()); // Check if there is a next page
@@ -51,6 +51,15 @@ const xvideos = require('@rodrigogs/xvideos');
   const detail = await xvideos.videos.details(fresh.videos[0]);
   // Log details of the specific video
   console.log(detail); // Detailed video object with properties like title, videoId, duration, durationSeconds, thumbnailUrls, watchCount, videoType, files, uploadDate, tags, categories
+
+  // Retrieve many detail pages with explicit crawl controls
+  const batch = await xvideos.videos.detailsMany(fresh.videos.slice(0, 3), {
+    concurrency: 2,
+    retries: 1,
+    minDelayMs: 250,
+  });
+  console.log(batch.successes); // Successful detail payloads in input order
+  console.log(batch.failures); // Failed inputs with their error
 })();
 ```
 
@@ -68,6 +77,13 @@ npm test
 
 ## Migration Notes
 
+### Version 3.1 richer list results and crawl ergonomics
+
+This release is additive:
+
+- list items now include `durationSeconds` and `thumbnailUrl`
+- `videos.detailsMany()` adds ordered batch detail fetching with `concurrency`, `retries`, `retryDelayMs`, and `minDelayMs`
+
 ### Version 3.0 field normalization
 
 Some fields were normalized to remove redundant data while keeping all information available:
@@ -80,6 +96,9 @@ Some fields were normalized to remove redundant data while keeping all informati
 | `details.views` | `details.watchCount` | Numeric form for analytics and ranking. |
 
 ### New fields added
+
+- `videos[].durationSeconds`
+- `videos[].thumbnailUrl`
 
 - `details.videoId`
 - `details.durationSeconds`
@@ -194,6 +213,29 @@ const details = await xvideos.videos.details({ url: 'https://www.xvideos.com/vid
 // Log detailed information about the video
 console.log(details); // Detailed video object with properties like title, videoId, duration, durationSeconds, thumbnailUrls, watchCount, videoType, files, uploadDate, description, contentUrl, tags, categories, voteCount, ratingPercent
 ```
+
+### Retrieve Many Video Details
+
+```javascript
+const batch = await xvideos.videos.detailsMany(
+  [
+    { url: 'https://www.xvideos.com/video123/example' },
+    { url: 'https://www.xvideos.com/video456/example' },
+  ],
+  {
+    concurrency: 3,
+    retries: 1,
+    retryDelayMs: 250,
+    minDelayMs: 500,
+  },
+);
+
+console.log(batch.items); // One entry per input, preserving order
+console.log(batch.successes); // Successful detail payloads only
+console.log(batch.failures); // Failed requests with input + error
+```
+
+`detailsMany()` is intended for enrichment and crawling flows where you want explicit control over throughput and retry behavior without making list methods heavy by default.
 
 ### Filter [Videos](https://www.xvideos.com/?k=threesome)
 
