@@ -1,0 +1,13 @@
+coverage:
+  precision: 2
+  round: down
+  range: "70...100"
+  status:
+    project: true
+    patch: true
+    changes: true
+
+ignore:
+  - "src/index.cts"
+  - "src/types"
+  - "src/**/*.d.ts"
