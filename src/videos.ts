@@ -29,9 +29,9 @@ const normalizeText = (value: string | null | undefined): string => {
 
 const decodeEscapedValue = (value: string): string => {
   return value
-    .replace(/\\u0026/gi, '&')
     .replace(/\\u002f/gi, '/')
     .replace(/\\\//g, '/')
+    .replace(/\\u0026/gi, '&')
     .replace(/&amp;/g, '&')
     .trim();
 };
