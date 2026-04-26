@@ -6,6 +6,7 @@ on:
   pull_request:
     branches: [master]
   schedule:
+    # Runs every Monday at 12:00 UTC
     - cron: '0 12 * * 1'
 
 permissions:

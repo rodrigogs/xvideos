@@ -85,6 +85,7 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           files: coverage/lcov.info
+          # Keep false so forks and first-time setups don't fail CI before Codecov is configured
           fail_ci_if_error: false
 
       - name: Upload coverage artifact
