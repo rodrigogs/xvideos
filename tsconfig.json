@@ -1,11 +1,11 @@
 {
-	"extends": "./tsconfig.base.json",
-	"compilerOptions": {
-		"module": "NodeNext",
-		"moduleResolution": "NodeNext",
-		"declaration": true,
-		"declarationDir": "dist/types",
-		"stripInternal": true,
-		"outDir": "dist/esm"
-	}
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "declaration": true,
+    "declarationDir": "dist/types",
+    "stripInternal": true,
+    "outDir": "dist/esm"
+  }
 }

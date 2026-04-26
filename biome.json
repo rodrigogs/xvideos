@@ -1,32 +1,32 @@
 {
-	"files": {
-		"includes": [
-			"src/**/*.cts",
-			"src/**/*.ts",
-			"test/**/*.ts",
-			"package.json",
-			"tsconfig.base.json",
-			"tsconfig.cjs.json",
-			"tsconfig.json",
-			"vitest.config.ts",
-			"biome.json"
-		]
-	},
-	"formatter": {
-		"enabled": true,
-		"indentStyle": "space",
-		"indentWidth": 2
-	},
-	"linter": {
-		"enabled": true,
-		"rules": {
-			"recommended": true
-		}
-	},
-	"javascript": {
-		"formatter": {
-			"quoteStyle": "single",
-			"semicolons": "always"
-		}
-	}
+  "files": {
+    "includes": [
+      "src/**/*.cts",
+      "src/**/*.ts",
+      "test/**/*.ts",
+      "package.json",
+      "tsconfig.base.json",
+      "tsconfig.cjs.json",
+      "tsconfig.json",
+      "vitest.config.ts",
+      "biome.json"
+    ]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true
+    }
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "single",
+      "semicolons": "always"
+    }
+  }
 }

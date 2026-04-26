@@ -1,7 +1,7 @@
-import videos from "./videos.js";
+import videos from './videos.js';
 
 const xvideos = {
-	videos,
+  videos,
 };
 
 export default xvideos;
