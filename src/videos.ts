@@ -31,8 +31,7 @@ const decodeEscapedValue = (value: string): string => {
   return value
     .replace(/\\u002f/gi, '/')
     .replace(/\\\//g, '/')
-    .replace(/\\u0026/gi, '&')
-    .replace(/&amp;/g, '&')
+    .replace(/\\u0026|&amp;/gi, '&')
     .trim();
 };
 
