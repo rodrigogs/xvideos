@@ -525,6 +525,7 @@ const videos = {
 	verified,
 };
 
+/** @internal */
 export const __private__ = {
 	assertPage,
 	buildListResult,
