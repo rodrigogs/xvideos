@@ -54,8 +54,6 @@ const detail = await xvideos.videos.details(fresh.videos[0]);
 console.log(detail); // Detailed video object with properties like title, duration, image, videoType, views, files
 ```
 
-## API
-
 ## Development
 
 ```bash
@@ -67,6 +65,8 @@ npm run test:integration
 npm run coverage
 npm test
 ```
+
+## API
 
 ### Retrieve [Dashboard Videos](https://www.xvideos.com)
 

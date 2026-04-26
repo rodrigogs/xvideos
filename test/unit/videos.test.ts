@@ -377,6 +377,13 @@ describe('videos helpers', () => {
       __private__.extractFiles('', 'https://cdn.example/fallback.jpg').thumb,
     ).toBe('https://cdn.example/fallback.jpg');
 
+    expect(
+      __private__.extractFiles(
+        'html5player.setVideoHLS("//cdn.example/master.m3u8")',
+        '',
+      ).HLS,
+    ).toBe('https://cdn.example/master.m3u8');
+
     expect(__private__.parseResolutions(manifest)).toEqual([
       { width: 854, height: 480 },
       { width: 1280, height: 720 },

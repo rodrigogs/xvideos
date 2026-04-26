@@ -379,13 +379,16 @@ const extractFiles = (html: string, image: string): VideoFiles => {
       /"videoUrlHigh":"([^"]+)"/i,
       /"video_url_high":"([^"]+)"/i,
     ]),
-    HLS: extractFirstMatch(html, [
-      /html5player\.setVideoHLS\('([^']+)'/i,
-      /html5player\.setVideoHLS\("([^"]+)"/i,
-      /"videoHLS":"([^"]+)"/i,
-      /"video_hls":"([^"]+)"/i,
-      /((?:https:)?\/\/[^"' ]+\.m3u8[^"' ]*)/i,
-    ]),
+    HLS: (() => {
+      const hls = extractFirstMatch(html, [
+        /html5player\.setVideoHLS\('([^']+)'/i,
+        /html5player\.setVideoHLS\("([^"]+)"/i,
+        /"videoHLS":"([^"]+)"/i,
+        /"video_hls":"([^"]+)"/i,
+        /((?:https:)?\/\/[^"' ]+\.m3u8[^"' ]*)/i,
+      ]);
+      return hls.startsWith('//') ? `https:${hls}` : hls;
+    })(),
     thumb:
       extractFirstMatch(html, [
         /html5player\.setThumbUrl\('([^']+)'/i,
