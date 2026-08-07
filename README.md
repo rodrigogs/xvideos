@@ -86,7 +86,9 @@ xvideos.configure({
 });
 ```
 
-`minRequestIntervalMs` is shared process-wide: the largest configured interval across all clients wins, and per-client options raise it further. `proxyUrl` can also be passed per client via `RequestOptions` when you do not want a global proxy.
+`minRequestIntervalMs` is shared process-wide: the largest configured interval across all clients wins and cannot be lowered afterwards (per-client options raise it further; `resetSharedThrottle` is exposed from `base.ts` for full reset). `proxyUrl` can also be passed per client via `RequestOptions` when you do not want a global proxy.
+
+Note for CommonJS consumers: `require('@rodrigogs/xvideos').configure(...)` returns a Promise (the CJS entry loads the ESM build lazily) — await it or chain `.then()` before firing requests to guarantee the config is applied first.
 
 ## Development
 

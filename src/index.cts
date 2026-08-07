@@ -1,15 +1,29 @@
 const { join } = require('node:path');
 const { pathToFileURL } = require('node:url');
 
+type XvideosApi = {
+  videos: Record<string, (...arguments_: unknown[]) => unknown>;
+  configure: (config: {
+    minRequestIntervalMs?: number;
+    proxyUrl?: string;
+  }) => void;
+};
+
 const esmEntryUrl = pathToFileURL(join(__dirname, '../esm/index.js')).href;
-const load = () => import(esmEntryUrl).then((module) => module.default);
+let esmModulePromise: Promise<{ default: XvideosApi }> | undefined;
+
+const load = (): Promise<XvideosApi> => {
+  esmModulePromise ??= import(esmEntryUrl) as Promise<{
+    default: XvideosApi;
+  }>;
+
+  return esmModulePromise.then((module) => module.default);
+};
 
 const callVideoMethod = (methodName: string) => {
   return (...arguments_: unknown[]) => {
     return load().then((xvideos) => {
-      return (
-        xvideos.videos as Record<string, (...arguments_: unknown[]) => unknown>
-      )[methodName](...arguments_);
+      return xvideos.videos[methodName](...arguments_);
     });
   };
 };

@@ -54,8 +54,9 @@ export const shouldRetry = (error: unknown): error is RetryableError => {
 
 /**
  * Exponential backoff with full jitter (AWS recommended): the delay for a
- * given attempt is a uniform random value in [0, base * 2^(attempt-1)).
- * Jitter avoids thundering-herd retry storms against rate limiters.
+ * given attempt is a uniform random value in
+ * [0, RETRY_BASE_DELAY_MS * 2^(attempt-1)). Jitter avoids thundering-herd
+ * retry storms against rate limiters.
  */
 export const computeRetryDelay = (
   attempt: number,
@@ -123,17 +124,21 @@ export const createRequest = (options: RequestOptions = {}) => {
       while (true) {
         try {
           if (minRequestIntervalMs > 0) {
-            const wait = Math.max(
-              0,
-              sharedLastRequestStart + minRequestIntervalMs - now(),
+            // Reserve the slot synchronously BEFORE any await: concurrent
+            // callers serialize on sharedLastRequestStart, so simultaneous
+            // waiters can't compute the same stale-anchor sleep, wake up
+            // together and fire in a burst (breaking the minimum spacing).
+            const start = Math.max(
+              now(),
+              sharedLastRequestStart + minRequestIntervalMs,
             );
+            sharedLastRequestStart = start;
+            const wait = start - now();
 
             if (wait > 0) {
               await sleep(wait);
             }
           }
-
-          sharedLastRequestStart = now();
 
           const response = await transport({
             url: resolveUrl(path),

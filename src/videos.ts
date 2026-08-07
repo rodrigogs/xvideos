@@ -393,7 +393,7 @@ const best = async ({
 };
 
 const assertCategory = (categorySlug: string): void => {
-  if (!/^[a-zA-Z0-9-]+$/.test(categorySlug)) {
+  if (!/^[a-zA-Z0-9_-]+$/.test(categorySlug)) {
     throw new Error(`Invalid category: ${categorySlug}`);
   }
 };

@@ -237,6 +237,36 @@ describe('crawl ergonomics', () => {
     expect(sleep).toHaveBeenLastCalledWith(400);
   });
 
+  it('serializes concurrent request starts through the shared throttle', async () => {
+    const transport = vi.fn().mockResolvedValue({
+      body: 'ok',
+      statusCode: 200,
+      url: `${BASE_URL}/concurrent`,
+    });
+    const sleep = vi.fn().mockResolvedValue(undefined);
+    const now = 1_000;
+
+    const request = createRequest({
+      minRequestIntervalMs: 500,
+      now: () => now,
+      sleep,
+      transport,
+    });
+
+    // All three calls are in-flight at t=1000. Each must reserve its own
+    // slot synchronously (1000, 1500, 2000) instead of recomputing the same
+    // stale-anchor wait and firing together.
+    await Promise.all([
+      request.get('/concurrent'),
+      request.get('/concurrent'),
+      request.get('/concurrent'),
+    ]);
+
+    expect(sleep).toHaveBeenNthCalledWith(1, 500);
+    expect(sleep).toHaveBeenNthCalledWith(2, 1_000);
+    expect(transport).toHaveBeenCalledTimes(3);
+  });
+
   it('applies the shared config from configureRequest to plain clients', async () => {
     const transport = vi.fn().mockResolvedValue({
       body: 'ok',

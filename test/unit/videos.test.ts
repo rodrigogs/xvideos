@@ -458,6 +458,8 @@ describe('videos helpers', () => {
       'Invalid category: a/b',
     );
     expect(() => __private__.assertCategory('AI-239')).not.toThrow();
+    expect(() => __private__.assertCategory('Asian_Woman-32')).not.toThrow();
+    expect(() => __private__.assertCategory('Big_Ass-24')).not.toThrow();
   });
 
   it('loads category listings with zero-based page urls', async () => {
