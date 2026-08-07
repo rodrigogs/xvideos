@@ -673,6 +673,25 @@ const parseTaxonomy = ($: CheerioAPI, selector: string): string[] => {
   return Array.from(new Set(values));
 };
 
+/**
+ * Category links on xvideos pages. The site's GLOBAL navigation menu is a
+ * `li.dyntop-cat` list of /c/ links that appears on EVERY page — including
+ * the video detail page — so `a[href*="/c/"]` alone returns the same ~38
+ * nav-menu categories for every video (useless as per-video taxonomy).
+ * Filter those out; only category links outside the nav menu survive.
+ */
+const parseCategories = ($: CheerioAPI): string[] => {
+  const values = $('a[href*="/c/"]')
+    .filter((_, element) => {
+      return !$(element).closest('li.dyntop-cat').length;
+    })
+    .map((_, element) => normalizeText($(element).text()))
+    .get()
+    .filter(Boolean);
+
+  return Array.from(new Set(values));
+};
+
 const parseEngagement = (
   $: CheerioAPI,
   html: string,
@@ -920,7 +939,7 @@ const details = async ({ url }: DetailsInput): Promise<VideoDetailsResult> => {
         ? normalizeText(jsonLd.contentUrl)
         : '',
     tags: parseTaxonomy($, 'a[href*="/tags/"]'),
-    categories: parseTaxonomy($, 'a[href*="/c/"]'),
+    categories: parseCategories($),
     files,
   };
 };
@@ -1031,6 +1050,7 @@ export const __private__ = {
   parseNumberWithSuffix,
   parseStringArray,
   parseTaxonomy,
+  parseCategories,
   parseVideoId,
   parseWatchCount,
   readDetailViews,

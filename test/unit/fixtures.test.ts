@@ -90,4 +90,22 @@ describe('real HTML fixtures', () => {
       'https://www.xvideos.com/video.example/title';
     expect(__private__.parseVideoId(videoUrl)).toMatch(/^video\./);
   });
+
+  it('categories exclude the global nav menu (dyntop-cat)', () => {
+    // Regression for 2026-08-07: the detail page's `a[href*="/c/"]` selector
+    // captured the site's GLOBAL navigation menu (li.dyntop-cat) — the same
+    // ~38 categories on every video — instead of per-video categories.
+    const html = readFixture('video-detail.html');
+    const $ = load(html);
+    const categories = __private__.parseCategories($);
+
+    // The nav menu must NOT leak into per-video categories.
+    expect(categories).not.toContain('AI');
+    expect(categories).not.toContain('Amateur');
+    // The raw selector would match the whole menu (38 links).
+    expect(
+      __private__.parseTaxonomy($, 'a[href*="/c/"]').length,
+    ).toBeGreaterThan(20);
+    expect(categories.length).toBeLessThan(10);
+  });
 });
