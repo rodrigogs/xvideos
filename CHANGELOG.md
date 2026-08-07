@@ -5,6 +5,14 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.1] - 2026-08-07
+
+### Fixed
+
+- Shared throttle now reserves its slot synchronously before awaiting — concurrent requests (`Promise.all` of `videos.*` calls) can no longer compute the same stale-anchor sleep and fire together, breaking the `minRequestIntervalMs` spacing.
+- `videos.category()` accepts underscore slugs — real categories like `Asian_Woman-32` / `Big_Ass-24` were rejected with `Invalid category`.
+- The CJS wrapper memoizes its lazy ESM import (one `import()` per process instead of per call).
+
 ## [3.2.0] - 2026-08-07
 
 ### Added
