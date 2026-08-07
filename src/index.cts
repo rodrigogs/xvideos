@@ -17,11 +17,20 @@ const callVideoMethod = (methodName: string) => {
 const xvideos = {
   videos: {
     best: callVideoMethod('best'),
+    category: callVideoMethod('category'),
     dashboard: callVideoMethod('dashboard'),
     details: callVideoMethod('details'),
     fresh: callVideoMethod('fresh'),
     search: callVideoMethod('search'),
     verified: callVideoMethod('verified'),
+  },
+
+  configure: (config: unknown) => {
+    return load().then((api) => {
+      api.configure(
+        config as { minRequestIntervalMs?: number; proxyUrl?: string },
+      );
+    });
   },
 };
 

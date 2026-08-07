@@ -1,0 +1,82 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  id-token: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  release:
+    name: release (Node 22.x)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Use Node.js 22.x
+        uses: actions/setup-node@v7.0.0
+        with:
+          node-version: 22.x
+          cache: npm
+          cache-dependency-path: package-lock.json
+          registry-url: https://registry.npmjs.org
+
+      - run: npm ci
+
+      - name: Validate
+        run: |
+          npm run build
+          npm run lint
+          npm run test:unit
+
+      - name: Publish to npm
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Generate release notes
+        id: notes
+        run: |
+          PREVIOUS_TAG="$(git tag --sort=-version:refname | grep '^v' | sed -n 2p || true)"
+          NOTES="/tmp/release-notes.md"
+
+          {
+            echo '## What'"'"'s Changed'
+            echo
+            if [ -n "$PREVIOUS_TAG" ]; then
+              git log --no-merges --format='- %s' "$PREVIOUS_TAG"..HEAD
+            else
+              git log --no-merges --format='- %s'
+            fi
+            echo
+            echo '## Validation'
+            echo
+            echo '- `npm run build`'
+            echo '- `npm run lint`'
+            echo '- `npm run test:unit`'
+            echo '- `npm publish`'
+          } > "$NOTES"
+
+          echo "notes_file=$NOTES" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --title "$GITHUB_REF_NAME" \
+            --notes-file "${{ steps.notes.outputs.notes_file }}"

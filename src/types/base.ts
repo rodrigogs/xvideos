@@ -12,6 +12,7 @@ export type TransportOptions = {
   throwHttpErrors: true;
   retry: { limit: 0 };
   timeout: { request: number };
+  proxyUrl?: string;
 };
 
 export type Transport = (
@@ -22,6 +23,14 @@ export type RequestOptions = {
   headers?: Record<string, string>;
   sleep?: (milliseconds: number) => Promise<void>;
   transport?: Transport;
+  /** Minimum spacing between request starts, shared process-wide. */
+  minRequestIntervalMs?: number;
+  /** Route requests through an HTTP(S) proxy. */
+  proxyUrl?: string;
+  /** Clock for the shared throttle (injectable for tests). */
+  now?: () => number;
+  /** Random source for retry backoff jitter (injectable for tests). */
+  random?: () => number;
 };
 
 export type RequestResponse = {

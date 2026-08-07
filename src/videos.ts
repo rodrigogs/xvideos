@@ -2,6 +2,7 @@ import { type CheerioAPI, load } from 'cheerio';
 import type { Element } from 'domhandler';
 import base from './base.js';
 import type {
+  CategoryOptions,
   DetailsInput,
   DetailsManyOptions,
   SearchOptions,
@@ -15,6 +16,7 @@ import type {
 } from './types/videos.js';
 
 export type {
+  CategoryOptions,
   DetailsInput,
   DetailsManyOptions,
   Pagination,
@@ -275,6 +277,19 @@ const buildListResult = (
   };
 };
 
+const buildEmptyListing = (
+  page: number,
+  loadPage: (targetPage: number) => Promise<VideoListResult>,
+): VideoListResult => ({
+  videos: [],
+  pagination: { page, pages: [page] },
+  refresh: () => loadPage(page),
+  hasNext: () => false,
+  next: () => loadPage(page),
+  hasPrevious: () => false,
+  previous: () => loadPage(page),
+});
+
 const loadListingPage = async (
   page: number,
   candidates: string[],
@@ -375,6 +390,58 @@ const best = async ({
   return loadListingPage(page, candidates, (targetPage) =>
     best({ year: bestYear, month: bestMonth, page: targetPage }),
   );
+};
+
+const assertCategory = (categorySlug: string): void => {
+  if (!/^[a-zA-Z0-9-]+$/.test(categorySlug)) {
+    throw new Error(`Invalid category: ${categorySlug}`);
+  }
+};
+
+const createCategoryCandidates = (
+  categorySlug: string,
+  page: number,
+): string[] => {
+  if (page === 1) {
+    return [`/c/${categorySlug}`, `/c/${categorySlug}/1`];
+  }
+
+  // xvideos uses zero-based page suffixes on category urls: page 1 has no
+  // suffix, page 2 is /c/<slug>/1, page 3 is /c/<slug>/2, and so on.
+  return [`/c/${categorySlug}/${page - 1}`, `/c/${categorySlug}/${page}`];
+};
+
+const category = async ({
+  category: categorySlug,
+  page = 1,
+}: CategoryOptions): Promise<VideoListResult> => {
+  assertPage(page);
+  assertCategory(categorySlug);
+
+  try {
+    return await loadListingPage(
+      page,
+      createCategoryCandidates(categorySlug, page),
+      (targetPage) =>
+        category({
+          category: categorySlug,
+          page: targetPage,
+        }),
+    );
+  } catch (error) {
+    // Unknown category slugs return a real HTTP 404. Surface an empty
+    // listing instead of an exception so callers can fall back gracefully.
+    const statusCode = (error as { response?: { statusCode?: number } })
+      .response?.statusCode;
+
+    if (statusCode === 404) {
+      return buildEmptyListing(page, (targetPage) =>
+        category({ category: categorySlug, page: targetPage }),
+      );
+    }
+
+    throw error;
+  }
 };
 
 const createSearchCandidate = (
@@ -927,6 +994,7 @@ const detailsMany = async (
 
 const videos = {
   best,
+  category,
   dashboard,
   details,
   detailsMany,
@@ -937,9 +1005,12 @@ const videos = {
 
 /** @internal */
 export const __private__ = {
+  assertCategory,
   assertPage,
   assertVideoUrl,
+  buildEmptyListing,
   buildListResult,
+  createCategoryCandidates,
   createStartGate,
   createIndexQueryCandidates,
   createSearchCandidate,

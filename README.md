@@ -1,8 +1,11 @@
 # xvideos
 
+[![npm version](https://img.shields.io/npm/v/@rodrigogs%2Fxvideos.svg)](https://www.npmjs.com/package/@rodrigogs/xvideos)
+[![npm downloads](https://img.shields.io/npm/dm/@rodrigogs%2Fxvideos.svg)](https://www.npmjs.com/package/@rodrigogs/xvideos)
 [![CI](https://github.com/rodrigogs/xvideos/actions/workflows/node.js.yml/badge.svg)](https://github.com/rodrigogs/xvideos/actions/workflows/node.js.yml)
 [![codecov](https://codecov.io/gh/rodrigogs/xvideos/graph/badge.svg)](https://codecov.io/gh/rodrigogs/xvideos)
 [![CodeQL](https://github.com/rodrigogs/xvideos/actions/workflows/codeql.yml/badge.svg)](https://github.com/rodrigogs/xvideos/actions/workflows/codeql.yml)
+[![license](https://img.shields.io/npm/l/@rodrigogs%2Fxvideos.svg)](https://github.com/rodrigogs/xvideos/blob/master/LICENSE)
 
 A [Node.js](https://nodejs.org) library for the [xvideos.com](https://www.xvideos.com) API.
 
@@ -63,6 +66,28 @@ const xvideos = require('@rodrigogs/xvideos');
 })();
 ```
 
+## Crawl ergonomics
+
+### `xvideos.configure({ minRequestIntervalMs, proxyUrl })`
+
+Configures process-wide request behavior. Applies to every request the library makes from this process (all `videos.*` methods, list and detail alike).
+
+```javascript
+import xvideos from '@rodrigogs/xvideos';
+
+xvideos.configure({
+  // Minimum spacing between request starts (milliseconds). Keeps the
+  // library polite against rate limiters and is shared across every
+  // concurrent client in the process.
+  minRequestIntervalMs: 250,
+  // Route requests through an HTTP(S) proxy — useful when running from a
+  // datacenter IP that XVIDEOS blocks (e.g. CI runners).
+  proxyUrl: 'http://user:pass@proxy.example.com:8080',
+});
+```
+
+`minRequestIntervalMs` is shared process-wide: the largest configured interval across all clients wins, and per-client options raise it further. `proxyUrl` can also be passed per client via `RequestOptions` when you do not want a global proxy.
+
 ## Development
 
 ```bash
@@ -75,7 +100,18 @@ npm run coverage
 npm test
 ```
 
+Real-HTML fixtures under `test/fixtures/` pin the current site layout. If a fixture test fails after an XVIDEOS layout change, regenerate with `scripts/refresh-fixtures.sh` and commit the diff.
+
 ## Migration Notes
+
+### Version 3.2 category browsing and crawl ergonomics
+
+This release is additive:
+
+- `videos.category({ category, page })` — category video listings by slug (`/c/<slug>`), with 404 handling that surfaces an empty listing for unknown categories
+- `xvideos.configure({ minRequestIntervalMs, proxyUrl })` — process-wide crawl ergonomics: a shared minimum interval between request starts (rate limiting, shared across all clients) and optional HTTP(S) proxy routing
+- retry backoff now uses exponential backoff with full jitter instead of a fixed linear delay
+- real-HTML fixtures (`test/fixtures/`) pin the current site layout — parser tests fail on layout changes instead of production code. Regenerate with `scripts/refresh-fixtures.sh`
 
 ### Version 3.1 richer list results and crawl ergonomics
 
@@ -203,6 +239,28 @@ const nextVideos = await verifiedList.next();
 // Retrieve the previous page of verified videos if available
 const previousVideos = await verifiedList.previous();
 ```
+
+### Retrieve [Category Videos](https://www.xvideos.com/c/AI-239)
+
+```javascript
+// Retrieve videos from a specific category, starting from the first page
+const categoryList = await xvideos.videos.category({ category: 'AI-239' });
+
+// Specify a page number
+const categoryPage2 = await xvideos.videos.category({
+  category: 'Amateur-65',
+  page: 2,
+});
+
+// Check if there is a next page of results
+console.log(categoryList.hasNext()); // Outputs: true or false
+
+// Refresh / navigate like any other list result
+const refreshed = await categoryList.refresh();
+const nextVideos = await categoryList.next();
+```
+
+The `category` option is the slug as it appears in category urls (`/c/<category>`), e.g. `'AI-239'` or `'Amateur-65'`. Unknown categories return an empty listing instead of throwing.
 
 ### Retrieve [Video Details](https://www.xvideos.com/video36638661/chaturbate_lulacum69_30-05-2018)
 

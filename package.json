@@ -35,12 +35,12 @@
     "got-scraping": "^4.2.1"
   },
   "devDependencies": {
-    "@types/node": "^24.10.1",
-    "@biomejs/biome": "^2.4.13",
-    "@vitest/coverage-v8": "^4.1.5",
+    "@biomejs/biome": "^2.5.7",
+    "@types/node": "^26.1.2",
+    "@vitest/coverage-v8": "^4.1.10",
     "rimraf": "^6.0.1",
-    "typescript": "^6.0.3",
-    "vitest": "^4.1.5"
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
   },
   "engines": {
     "node": ">=20.18.1"

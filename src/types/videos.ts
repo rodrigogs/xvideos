@@ -101,3 +101,9 @@ export type SearchOptions = {
   datef?: string;
   quality?: string;
 };
+
+export type CategoryOptions = {
+  page?: number;
+  /** Category slug as it appears in category urls (e.g. `AI-239`). */
+  category: string;
+};

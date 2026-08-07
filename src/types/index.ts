@@ -1,4 +1,5 @@
 export type {
+  CategoryOptions,
   DetailsInput,
   DetailsManyOptions,
   Pagination,

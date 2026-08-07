@@ -1,6 +1,7 @@
 import xvideos from './xvideos.js';
 
 export type {
+  CategoryOptions,
   DetailsInput,
   DetailsManyOptions,
   Pagination,
@@ -15,6 +16,7 @@ export type {
   VideoProfile,
   VideoSummary,
 } from './types/index.js';
+export type { XvideosConfig } from './xvideos.js';
 
 const api = xvideos;
 

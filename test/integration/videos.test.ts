@@ -82,6 +82,12 @@ describe.sequential('live integration', () => {
     assertList(list, 1);
   });
 
+  it('loads category list', async () => {
+    const list = await xvideos.videos.category({ category: 'AI-239' });
+
+    assertList(list, 1);
+  });
+
   it('loads search results and navigation', async () => {
     const list = await xvideos.videos.search({ k: 'test', page: 2 });
 

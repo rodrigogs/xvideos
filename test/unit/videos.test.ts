@@ -437,6 +437,128 @@ describe('videos helpers', () => {
     ).toBe('/?p=2');
   });
 
+  it('builds category route candidates and validates slugs', () => {
+    expect(__private__.createCategoryCandidates('AI-239', 1)).toEqual([
+      '/c/AI-239',
+      '/c/AI-239/1',
+    ]);
+    expect(__private__.createCategoryCandidates('AI-239', 2)).toEqual([
+      '/c/AI-239/1',
+      '/c/AI-239/2',
+    ]);
+    expect(__private__.createCategoryCandidates('teen', 3)).toEqual([
+      '/c/teen/2',
+      '/c/teen/3',
+    ]);
+    expect(() => __private__.assertCategory('')).toThrow('Invalid category: ');
+    expect(() => __private__.assertCategory('bad slug')).toThrow(
+      'Invalid category: bad slug',
+    );
+    expect(() => __private__.assertCategory('a/b')).toThrow(
+      'Invalid category: a/b',
+    );
+    expect(() => __private__.assertCategory('AI-239')).not.toThrow();
+  });
+
+  it('loads category listings with zero-based page urls', async () => {
+    requestGet.mockResolvedValueOnce({
+      data: classicListingHtml,
+      statusCode: 200,
+      url: 'https://www.xvideos.com/c/AI-239',
+    });
+    const first = await videos.category({ category: 'AI-239' });
+    expect(first).toMatchObject({
+      pagination: { page: 1, pages: [1, 2, 3] },
+    });
+    expect(first.videos[0]).toMatchObject({
+      videoId: 'video.one',
+      durationSeconds: 300,
+    });
+    expect(requestGet).toHaveBeenLastCalledWith('/c/AI-239');
+
+    requestGet.mockResolvedValueOnce({
+      data: classicListingHtml,
+      statusCode: 200,
+      url: 'https://www.xvideos.com/c/AI-239/1',
+    });
+    const nextPage = await first.next();
+    expect(nextPage.pagination.page).toBe(2);
+    expect(requestGet).toHaveBeenLastCalledWith('/c/AI-239/1');
+
+    requestGet.mockResolvedValueOnce({
+      data: classicListingHtml,
+      statusCode: 200,
+      url: 'https://www.xvideos.com/c/AI-239/1',
+    });
+    const second = await videos.category({ category: 'AI-239', page: 2 });
+    expect(second.pagination.page).toBe(2);
+    expect(requestGet).toHaveBeenLastCalledWith('/c/AI-239/1');
+  });
+
+  it('surfaces an empty listing for unknown category slugs', async () => {
+    const notFound = Object.assign(new Error('not found'), {
+      response: { statusCode: 404 },
+    });
+    requestGet
+      .mockRejectedValueOnce(notFound)
+      .mockRejectedValueOnce(notFound)
+      .mockRejectedValueOnce(notFound)
+      .mockRejectedValueOnce(notFound)
+      .mockRejectedValueOnce(notFound)
+      .mockRejectedValueOnce(notFound)
+      .mockRejectedValueOnce(notFound)
+      .mockRejectedValueOnce(notFound);
+
+    const result = await videos.category({ category: 'missing-999' });
+
+    expect(result.videos).toEqual([]);
+    expect(result.pagination).toEqual({ page: 1, pages: [1] });
+    expect(result.hasNext()).toBe(false);
+    expect(result.hasPrevious()).toBe(false);
+    await expect(result.refresh()).resolves.toMatchObject({
+      videos: [],
+      pagination: { page: 1, pages: [1] },
+    });
+    await expect(result.next()).resolves.toMatchObject({
+      videos: [],
+      pagination: { page: 1, pages: [1] },
+    });
+    await expect(result.previous()).resolves.toMatchObject({
+      videos: [],
+      pagination: { page: 1, pages: [1] },
+    });
+  });
+
+  it('rethrows non-404 category failures', async () => {
+    requestGet
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockRejectedValueOnce(new Error('offline'));
+
+    await expect(videos.category({ category: 'AI-239' })).rejects.toThrow(
+      'offline',
+    );
+
+    requestGet
+      .mockRejectedValueOnce(
+        Object.assign(new Error('server error'), {
+          response: { statusCode: 500 },
+        }),
+      )
+      .mockRejectedValueOnce(
+        Object.assign(new Error('server error'), {
+          response: { statusCode: 500 },
+        }),
+      );
+
+    await expect(videos.category({ category: 'AI-239' })).rejects.toThrow(
+      'server error',
+    );
+
+    await expect(
+      videos.category({ category: 'AI-239', page: 0 }),
+    ).rejects.toThrow('Invalid page: 0');
+  });
+
   it('reads detail metadata and file urls', async () => {
     const $ = load(detailHtml);
 
